@@ -1,8 +1,4 @@
-@font-face {
-  font-family: Aeonik;
-  src: url("../src/assets/fonts/Aeonik-Regular.ttf");
-}
-
+@import url("/fonts/aeonik.css");
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
