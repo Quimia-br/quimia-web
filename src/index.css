@@ -1,0 +1,149 @@
+@import url("/fonts/aeonik/aeonik.css");
+@import url("/fonts/opendyslexic/opendyslexic.css");
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --border-primary: oklch(0.8853 0 0);
+  --border-secondary: oklch(0.3715 0 0 / 10%);
+  --border-focus: oklch(0.791748 0.169195 163.7995);
+
+  --brand-primary: oklch(0.8377 0.1927 157.62);
+  --brand-secondary: oklch(0.835 0.1157 202.83);
+  --brand-accent: oklch(0.791748 0.169195 163.7995);
+
+  --feedback-sucess: oklch(0.8377 0.1927 157.62);
+  --feedback-warning: oklch(0.8508 0.1265 77.37);
+  --feedback-error: oklch(0.657 0.2434 5.43);
+
+  --foreground-primary: oklch(0.3715 0 0);
+  --foreground-secondary: oklch(0.3715 0 0);
+  --foreground-disabled: oklch(0.7636 0 0);
+  --foreground-error: oklch(1 0 0);
+  --foreground-on-color: oklch(1 0 0);
+  --foreground-subtle: oklch(0.6665 0 0);
+
+  --spacing: 1rem;
+
+  --primary-primary: oklch(0.835 0.1157 202.83);
+  --primary-pressed: oklch(0.7422 0.1276 208.58);
+  --primary-on-color: oklch(1 0 0 / 60%);
+
+  --radius: 1rem;
+
+  --secondary-primary: oklch(0.9431 0 0);
+  --secondary-secondary: oklch(0.8141 0 0);
+  --secondary-on-color: oklch(0.7572 0 0);
+
+  --surface-background: oklch(0.9736 0.0017 67.8);
+  --surface-base: oklch(1 0 0);
+  --surface-disabled: oklch(0.9158 0 0);
+
+  --text: 1.25rem;
+
+  --text-primary: oklch(0.3677 0 0);
+  --text-secondary: oklch(0.7444 0 0);
+}
+
+.dark {
+  --border-primary: oklch(0.8853 0 0);
+  --border-secondary: oklch(0.3715 0 0 / 10%);
+  --border-focus: oklch(0.791748 0.169195 163.7995);
+
+  --brand-primary: oklch(0.8377 0.1927 157.62);
+  --brand-secondary: oklch(0.835 0.1157 202.83);
+  --brand-accent: oklch(0.791748 0.169195 163.7995);
+
+  --feedback-sucess: oklch(0.8377 0.1927 157.62);
+  --feedback-warning: oklch(0.8508 0.1265 77.37);
+  --feedback-error: oklch(0.657 0.2434 5.43);
+
+  --foreground-primary: oklch(1 0 0);
+  --foreground-secondary: oklch(1 0 0);
+  --foreground-disabled: oklch(0.9219 0 0);
+  --foreground-error: oklch(1 0 0);
+  --foreground-on-color: oklch(0 0 0);
+  --foreground-subtle: oklch(0.6665 0 0);
+
+  --spacing: 1rem;
+
+  --primary-primary: oklch(0.835 0.1157 202.83);
+  --primary-pressed: oklch(0.7422 0.1276 208.58);
+  --primary-on-color: oklch(1 0 0);
+
+  --radius: 1rem;
+
+  --secondary-primary: oklch(0.5032 0 0);
+  --secondary-secondary: oklch(0.3407 0 0);
+  --secondary-on-color: oklch(1 0 0 / 60%);
+
+  --surface-background: oklch(0.3012 0 0);
+  --surface-base: oklch(0.4054 0 0);
+  --surface-disabled: oklch(0.6133 0 0);
+
+  --text: 1rem;
+
+  --text-primary: oklch(1 0 0);
+  --text-secondary: oklch(1 0 0 / 60%);
+}
+
+@theme inline {
+  --color-border-primary: var(--border-primary);
+  --color-border-secondary: var(--border-secondary);
+  --color-border-focus: var(--border-focus);
+
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-accent: var(--brand-accent);
+
+  --color-feedback-sucess: var(--feedback-sucess);
+  --color-feedback-warning: var(--feedback-warning);
+  --color-feedback-error: var(--feedback-error);
+
+  --color-foreground-primary: var(--foreground-primary);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-disabled: var(--foreground-disabled);
+  --color-foreground-error: var(--foreground-error);
+  --color-foreground-on-color: var(--foreground-on-color);
+  --color-foreground-subtle: var(--foreground-subtle);
+
+  --spacing-none: 0;
+  --spacing-sm: calc(var(--spacing) - 0.25rem);
+  --spacing-md: var(--spacing);
+  --spacing-lg: calc(var(--spacing) + 0.5rem);
+
+  --color-primary-primary: var(--primary-primary);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-primary-on-color: var(--primary-on-color);
+
+  --radius-none: 0;
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: var(--radius);
+  --radius-sm: calc(var(--radius) + 0.5rem);
+  --radius-full: calc(infinity * 1px);
+
+  --color-secondary-primary: var(--secondary-primary);
+  --color-secondary-secondary: var(--secondary-secondary);
+  --color-secondary-on-color: var(--secondary-on-color);
+
+  --color-surface-background: var(--surface-background);
+  --color-surface-base: var(--surface-base);
+  --color-surface-disabled: var(--surface-disabled);
+
+  --text-sm: calc(var(--text) - 2px);
+  --text-md: var(--text);
+  --text-lg: calc(var(--text) + 0.25rem);
+  --text-xl: calc(var(--text) + 1.25rem);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+
+  --font-aeonik: "Aeonik", "sans-serif";
+}
+
+@layer base {
+  body {
+    @apply font-aeonik bg-surface-background;
+  }
+}
