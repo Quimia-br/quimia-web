@@ -1,7 +1,7 @@
 /* Thin */
 @font-face {
   font-family: "Aeonik";
-  src: url("/fonts/Aeonik-Thin.ttf") format("truetype");
+  src: url("/") format("truetype");
   font-weight: 100;
   font-style: normal;
   font-display: swap;
