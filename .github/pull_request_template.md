@@ -1,4 +1,3 @@
-```markdown
 ## O que muda
 
 <!-- Descreva em 2 a 4 linhas o que este PR faz e por quê.
@@ -45,4 +44,3 @@ Refs: <!-- ex: S1-14 -->
 
 <!-- Screenshot, log, resultado de teste, link de ambiente.
      Opcional para mudanças internas; obrigatório para feat e fix visíveis. -->
-```
