@@ -1,4 +1,4 @@
-name: Build CI
+name: CI
 
 on:
   push:
@@ -14,20 +14,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 1. Instala o pnpm antes de configurar o Node.js
     - name: Setup pnpm
       uses: pnpm/action-setup@v3
       with:
         version: 9
 
-    # 2. Configura o Node e ativa o cache nativo para o pnpm
     - name: Use Node.js 20.x
       uses: actions/setup-node@v4
       with:
         node-version: 20.x
         cache: 'pnpm'
 
-    # 3. Instala as dependências e roda o build do Vite
     - name: Install and Build
       run: |
         pnpm install --frozen-lockfile
