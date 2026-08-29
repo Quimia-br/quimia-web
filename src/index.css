@@ -120,7 +120,7 @@
   --radius-none: 0;
   --radius-sm: calc(var(--radius) - 0.25rem);
   --radius-md: var(--radius);
-  --radius-sm: calc(var(--radius) + 0.5rem);
+  --radius-lg: calc(var(--radius) + 0.5rem);
   --radius-full: calc(infinity * 1px);
 
   --color-secondary-primary: var(--secondary-primary);
