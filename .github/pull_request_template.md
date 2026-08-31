@@ -23,7 +23,7 @@ Refs: <!-- ex: S1-14 -->
 ## Checklist
 
 - [ ] Título do PR segue Conventional Commits (`tipo(scope): descrição`)
-- [ ] Branch nomeada corretamente (`prefixo/ticket`)
+- [ ] Branch nomeada corretamente (`prefixo/QUI-ticket`)
 - [ ] Ticket do Jira referenciado na seção acima
 - [ ] Testes adicionados ou justificativa para ausência documentada aqui
 - [ ] Documentação atualizada se comportamento externo mudou
