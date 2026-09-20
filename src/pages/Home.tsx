@@ -4,6 +4,9 @@ import TextField from "../components/TextField";
 function Home() {
   const [value, setValue] = useState("")
 
+  const body = document.querySelector("body")
+  body?.classList.add("dark")
+
   return (
     <main className="p-lg grid grid-cols-2 gap-5">
       <TextField

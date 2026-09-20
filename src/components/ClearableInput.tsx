@@ -62,9 +62,9 @@ function ClearableInput({
   return (
     <InputGroup
       className={cn(
-        "h-4 rounded-full border-input bg-surface-base align-middle",
+        "h-4 rounded-full bg-surface-base align-middle",
         "has-[[data-slot=input-group-control]:focus-visible]:border-border-focus has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-border-focus",
-        "has-[[data-slot][aria-invalid=true]]:border-feedback-error has-[[data-slot][aria-invalid=true]]:ring-2 has-[[data-slot][aria-invalid=true]]:ring-feedback-error",
+        "has-[[data-slot][aria-invalid=true]]:border-feedback-error has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-feedback-error",
         className,
       )}
     >
