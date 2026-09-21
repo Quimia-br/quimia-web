@@ -8,9 +8,9 @@ type TextFieldProps = React.ComponentProps<typeof Input> & {
   label?: string;
   description?: string;
   error?: string;
-  hideLabel: boolean;
-  hideDescription: boolean;
-  hideErrorDescription: boolean;
+  hideLabel?: boolean;
+  hideDescription?: boolean;
+  hideErrorDescription?: boolean;
   onClear?: () => void;
 };
 
@@ -18,9 +18,9 @@ function TextField({
   label,
   description,
   error,
-  hideLabel,
-  hideDescription,
-  hideErrorDescription,
+  hideLabel = false,
+  hideDescription = false,
+  hideErrorDescription = false,
   onClear,
   ...inputProps
 }: TextFieldProps) {
