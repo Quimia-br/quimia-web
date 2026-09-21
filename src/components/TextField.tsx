@@ -33,7 +33,7 @@ function TextField({
   };
 
   return (
-    <Field className="gap-1 font-medium" data-invalid={!!error}>
+    <Field className="gap-4 font-medium" data-invalid={!!error}>
       {label && (
         <FieldLabel htmlFor={inputId} className="text-foreground">
           {label}

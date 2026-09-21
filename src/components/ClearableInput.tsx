@@ -62,9 +62,9 @@ function ClearableInput({
   return (
     <InputGroup
       className={cn(
-        "h-4 rounded-full bg-surface-base align-middle",
-        "has-[[data-slot=input-group-control]:focus-visible]:border-border-focus has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-border-focus",
-        "has-[[data-slot][aria-invalid=true]]:border-feedback-error has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-feedback-error",
+        "h-14 rounded-full bg-input align-middle",
+        "has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring",
+        "has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-destructive",
         className,
       )}
     >
@@ -75,19 +75,19 @@ function ClearableInput({
         disabled={disabled}
         readOnly={readOnly}
         onChange={handleChange}
-        className="h-full border-none px-md py-none text-sm"
+        className="h-full border-none px-4 py-0 text-sm"
         {...props}
       />
       {isClearable && (
-        <InputGroupAddon align="inline-end" className="pr-[0.375rem]">
+        <InputGroupAddon align="inline-end" className="pr-4">
           <InputGroupButton
             aria-label={clearLabel}
             title={clearLabel}
             size="icon-xs"
-            className="size-3 rounded-full text-foreground hover:bg-secondary/20 focus-visible:ring-2"
+            className="size-8 rounded-full text-foreground hover:bg-secondary/20 focus-visible:ring-2"
             onClick={handleClear}
           >
-            <X aria-hidden="true" className="size-1" />
+            <X aria-hidden="true" className="size-4" />
           </InputGroupButton>
         </InputGroupAddon>
       )}
