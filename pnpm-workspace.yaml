@@ -1,0 +1,5 @@
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  # Legacy transitive dependency of Babel; integrity is pinned in pnpm-lock.yaml.
+  - semver@6.3.1
