@@ -1,14 +1,14 @@
 import { useState } from "react";
 import TextField from "../components/TextField";
 import MainTitle from "@/components/MainTitle";
-import BasicButton from "@/components/BasicButton";
-import { useTheme } from "@/hooks/useTheme";
-import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function Home() {
   const [value, setValue] = useState("")
-  const { theme, toggleTheme } = useTheme();
-  const nextTheme = theme === "dark" ? "light" : "dark";
+  const element = document.documentElement
+  const toggleTheme = () => {
+    element?.classList.toggle("dark")
+  }
 
   return (
     <main className="grid grid-cols-2 gap-5 p-6 align-middle justify-center">
@@ -16,13 +16,11 @@ function Home() {
         title="Title"
         description="Description"
       />
-      <BasicButton
+      <Button
         onClick={toggleTheme}
-        icon={theme === "dark" ? <Moon /> : <Sun />}
-        aria-label={`Switch to ${nextTheme} theme`}
       >
         Theme
-      </BasicButton>
+      </Button>
       <TextField
         label="Label"
         placeholder="Example"
