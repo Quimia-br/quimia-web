@@ -2,7 +2,7 @@
 @import url("/fonts/opendyslexic/opendyslexic.css");
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --border-primary: oklch(0.8853 0 0);
