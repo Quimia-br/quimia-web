@@ -1,18 +1,31 @@
 import { useState } from "react";
 import TextField from "../components/TextField";
+import MainTitle from "@/components/MainTitle";
+import { Button } from "@/components/ui/button";
 
 function Home() {
   const [value, setValue] = useState("")
-
-  const body = document.querySelector("body")
-  body?.classList.add("dark")
+  const element = document.documentElement
+  const toggleTheme = () => {
+    element?.classList.toggle("dark")
+  }
 
   return (
-    <main className="p-lg grid grid-cols-2 gap-5">
+    <main className="grid grid-cols-2 gap-5 p-6 align-middle justify-center">
+      <MainTitle
+        title="Title"
+        description="Description"
+      />
+      <Button
+        onClick={toggleTheme}
+      >
+        Theme
+      </Button>
       <TextField
         label="Label"
         placeholder="Example"
-        value=""
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         description="Description"
       />
       <TextField
@@ -22,11 +35,12 @@ function Home() {
         onChange={(e) => setValue(e.target.value)}
         onClear={() => setValue("")}
         description="Description"
-      />
+        />
       <TextField
         label="Label"
         placeholder="Example"
-        value=""
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         description="Description"
         error="Error description"
       />
