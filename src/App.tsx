@@ -1,11 +1,12 @@
-import { Route, Routes } from "react-router-dom";
-import Home from "./pages/Home";
+import { RouterProvider } from "react-router-dom";
+import { SpacemanThemeProvider } from "@space-man/react-theme-animation";
+import { router } from "./routes";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-    </Routes>
+    <SpacemanThemeProvider defaultTheme="system" defaultColorTheme="default">
+      <RouterProvider router={router} />
+    </SpacemanThemeProvider>
   );
 }
 
