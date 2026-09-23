@@ -1,6 +1,7 @@
 @import url("/fonts/aeonik/aeonik.css");
 @import url("/fonts/opendyslexic/opendyslexic.css");
 @import "tailwindcss";
+@source '../node_modules/@space-man/react-theme-animation/dist';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -182,10 +183,10 @@
   --color-surface-base: var(--surface-base);
   --color-surface-disabled: var(--surface-disabled);
 
-  --text-display: 3.25rem;
+  --text-display: 3.25em;
   --text-display--line-height: 1.1;
 
-  --text-subtitle: 2.25rem;
+  --text-subtitle: 2em;
   --text-subtitle--line-height: 1.2;
 
   --color-text-primary: var(--text-primary);
