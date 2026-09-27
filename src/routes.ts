@@ -9,13 +9,16 @@ const router = createBrowserRouter([
   {
     path: "/login",
     Component: Login,
+    ErrorBoundary: RouteErrorBoundary,
   },
   {
     path: "/signup",
     Component: Signup,
+    ErrorBoundary: RouteErrorBoundary,
   },
   {
     Component: ProtectedRoute,
+    ErrorBoundary: RouteErrorBoundary,
     children: [
       {
         path: "/",

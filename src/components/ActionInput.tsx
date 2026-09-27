@@ -5,17 +5,79 @@ import { cn } from "cn";
 
 interface ActionInputProps extends React.ComponentPropsWithoutRef<"input"> {
   clickLabel?: string;
+  clearLabel?: string;
   onClick?: () => void;
+  onClear?: () => void;
+}
+
+interface InputActionProps {
+  clearLabel: string;
+  isClearable: boolean;
+  isPasswordToggleable: boolean;
+  onClear: () => void;
+  onTogglePassword: () => void;
+  showPassword: boolean;
+}
+
+function InputAction({
+  clearLabel,
+  isClearable,
+  isPasswordToggleable,
+  onClear,
+  onTogglePassword,
+  showPassword,
+}: InputActionProps) {
+  if (isPasswordToggleable) {
+    const passwordLabel = showPassword ? "Hide password" : "Show password";
+
+    return (
+      <InputGroupAddon align="inline-end" className="pr-4">
+        <InputGroupButton
+          aria-label={passwordLabel}
+          className="rounded-full size-8 text-foreground hover:bg-secondary/20 focus-visible:ring-2"
+          onClick={onTogglePassword}
+          size="icon-xs"
+          title={passwordLabel}
+          type="button"
+        >
+          {showPassword ? (
+            <EyeClosed aria-hidden="true" className="size-4" />
+          ) : (
+            <Eye aria-hidden="true" className="size-4" />
+          )}
+        </InputGroupButton>
+      </InputGroupAddon>
+    );
+  }
+
+  if (!isClearable) return null;
+
+  return (
+    <InputGroupAddon align="inline-end" className="pr-4">
+      <InputGroupButton
+        aria-label={clearLabel}
+        className="rounded-full size-8 text-foreground hover:bg-secondary/20 focus-visible:ring-2"
+        onClick={onClear}
+        size="icon-xs"
+        title={clearLabel}
+        type="button"
+      >
+        <X aria-hidden="true" className="size-4" />
+      </InputGroupButton>
+    </InputGroupAddon>
+  );
 }
 
 const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
   (
     {
       className,
-      clickLabel = "Clear input",
+      clearLabel,
+      clickLabel,
       defaultValue,
       disabled,
       onChange,
+      onClear,
       type,
       onClick,
       readOnly,
@@ -36,6 +98,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
 
     const [showPassword, setShowPassword] = useState(false);
     const computedType = type === "password" && showPassword ? "text" : type;
+    const resolvedClearLabel = clearLabel ?? clickLabel ?? "Clear input";
 
     useImperativeHandle(forwardedRef, () => inputRef.current as HTMLInputElement);
 
@@ -77,6 +140,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
         }
       }
 
+      onClear?.();
       onClick?.();
       inputRef.current?.focus();
     }
@@ -100,39 +164,14 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
           className="h-full py-0 pl-6 pr-4 text-sm border-none"
           {...props}
         />
-        {isPasswordToggleable ? (
-          <InputGroupAddon align="inline-end" className="pr-4">
-            <InputGroupButton
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              title={showPassword ? "Hide password" : "Show password"}
-              type="button"
-              size="icon-xs"
-              className="rounded-full size-8 text-foreground hover:bg-secondary/20 focus-visible:ring-2"
-              onClick={handleTogglePassword}
-            >
-              {showPassword ? (
-                <EyeClosed aria-hidden="true" className="size-4" />
-              ) : (
-                <Eye aria-hidden="true" className="size-4" />
-              )}
-            </InputGroupButton>
-          </InputGroupAddon>
-        ) : (
-          isClearable && (
-            <InputGroupAddon align="inline-end" className="pr-4">
-              <InputGroupButton
-                aria-label={clickLabel}
-                title={clickLabel}
-                type="button"
-                size="icon-xs"
-                className="rounded-full size-8 text-foreground hover:bg-secondary/20 focus-visible:ring-2"
-                onClick={handleClear}
-              >
-                <X aria-hidden="true" className="size-4" />
-              </InputGroupButton>
-            </InputGroupAddon>
-          )
-        )}
+        <InputAction
+          clearLabel={resolvedClearLabel}
+          isClearable={isClearable}
+          isPasswordToggleable={isPasswordToggleable}
+          onClear={handleClear}
+          onTogglePassword={handleTogglePassword}
+          showPassword={showPassword}
+        />
       </InputGroup>
     );
   }

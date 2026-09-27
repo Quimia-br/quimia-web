@@ -1,7 +1,14 @@
 "use client";
 
 import { cn } from "cn";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  LazyMotion,
+  domAnimation,
+  useAnimationControls,
+  useReducedMotion,
+} from "motion/react";
+import * as m from "motion/react-m";
 import type React from "react";
 import {
   cloneElement,
@@ -11,7 +18,6 @@ import {
   useEffect,
   useId,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import {
@@ -139,16 +145,18 @@ export default function Form({
   );
 
   return (
-    <FormContext.Provider value={ctxValue}>
-      <form
-        className={cn("grid gap-3", className)}
-        noValidate
-        onSubmit={handleSubmit}
-        {...props}
-      >
-        {children}
-      </form>
-    </FormContext.Provider>
+    <LazyMotion features={domAnimation}>
+      <FormContext.Provider value={ctxValue}>
+        <form
+          className={cn("grid gap-3", className)}
+          noValidate
+          onSubmit={handleSubmit}
+          {...props}
+        >
+          {children}
+        </form>
+      </FormContext.Provider>
+    </LazyMotion>
   );
 }
 
@@ -156,34 +164,15 @@ export default function Form({
 // FormField — staggered entrance + validation shake
 // ---------------------------------------------------------------------------
 
-let fieldCounter = 0;
-
 export function FormField({ name, className, children }: FormFieldProps) {
   const { errors, submitCount } = useFormCtx();
   const id = useId();
   const error = errors[name];
 
-  // Stable field index for stagger animation
-  const fieldIndexRef = useRef<number | null>(null);
-  if (fieldIndexRef.current === null) {
-    fieldIndexRef.current = fieldCounter;
-    fieldCounter += 1;
-  }
-
-  // Reset counter on unmount of the first field (index 0)
-  useEffect(
-    () => () => {
-      if (fieldIndexRef.current === 0) {
-        fieldCounter = 0;
-      }
-    },
-    []
-  );
-
   const ctxValue = useMemo(
     () => ({
       error,
-      fieldIndex: fieldIndexRef.current ?? 0,
+      fieldIndex: 0,
       formDescriptionId: `${id}-form-item-description`,
       formItemId: `${id}-form-item`,
       formMessageId: `${id}-form-item-message`,
@@ -211,19 +200,19 @@ function FormFieldInner({
 }) {
   const shouldReduceMotion = useReducedMotion();
   const { error, fieldIndex, submitCount } = useFormFieldCtx();
+  const shakeControls = useAnimationControls();
 
   // Shake when a new error appears on submit
   const shouldShake = error && submitCount > 0;
-  const [shakeKey, setShakeKey] = useState(0);
 
   useEffect(() => {
-    if (shouldShake) {
-      setShakeKey((k) => k + 1);
+    if (shouldShake && !shouldReduceMotion) {
+      void shakeControls.start({ x: SHAKE_KEYFRAMES });
     }
-  }, [shouldShake, submitCount]);
+  }, [shakeControls, shouldReduceMotion, shouldShake, submitCount]);
 
   return (
-    <motion.div
+    <m.div
       animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       className={cn("grid gap-1.5", className)}
       data-slot="form-field"
@@ -237,12 +226,10 @@ function FormFieldInner({
             }
       }
     >
-      <motion.div
-        animate={
-          shouldShake && !shouldReduceMotion ? { x: SHAKE_KEYFRAMES } : { x: 0 }
-        }
+      <m.div
+        animate={shakeControls}
         className="grid gap-1.5"
-        key={shakeKey}
+        initial={false}
         transition={
           shouldReduceMotion
             ? DURATION_INSTANT
@@ -250,8 +237,8 @@ function FormFieldInner({
         }
       >
         {children}
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }
 
@@ -295,7 +282,7 @@ export function FormControl({
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <motion.div
+    <m.div
       animate={
         shouldReduceMotion
           ? {}
@@ -318,7 +305,7 @@ export function FormControl({
         "aria-invalid": error ? true : undefined,
         id: formItemId,
       })}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -330,7 +317,7 @@ function cloneChildWithA11y(
   if (child && typeof child === "object" && "type" in child) {
     const element = child as React.ReactElement<Record<string, unknown>>;
     // biome-ignore lint/suspicious/noExplicitAny: cloneElement requires flexible typing
-    return cloneElement(element as any, a11yProps);
+    return cloneElement(element, a11yProps);
   }
   return children;
 }
@@ -372,7 +359,7 @@ export function FormMessage({ className, children }: FormMessageProps) {
     <div>
       <AnimatePresence mode="wait">
         {body ? (
-          <motion.p
+          <m.p
             animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
             className={cn("text-destructive text-sm", className)}
             data-slot="form-message"
@@ -390,7 +377,7 @@ export function FormMessage({ className, children }: FormMessageProps) {
             transition={shouldReduceMotion ? DURATION_INSTANT : SPRING_DEFAULT}
           >
             {body}
-          </motion.p>
+          </m.p>
         ) : null}
       </AnimatePresence>
     </div>

@@ -71,6 +71,7 @@ describe("LoginForm", () => {
         screen.queryByText("Informe um e-mail valido"),
       ).not.toBeInTheDocument();
     });
+    expect(screen.getByLabelText("E-mail")).toHaveFocus();
     expect(screen.queryByText("Looks good")).not.toBeInTheDocument();
   });
 

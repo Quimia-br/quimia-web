@@ -1,29 +1,27 @@
 "use client";
 
 import { cn } from "cn";
-import { motion, useReducedMotion } from "motion/react";
+import { LazyMotion, domAnimation, useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import type { CSSProperties, ReactElement } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* Public types                                                               */
 /* -------------------------------------------------------------------------- */
 
-export const MOTION_LOADER_VARIANTS = [
-  "orbit",
-  "newton-cradle",
-  "pendulum",
-  "hourglass",
-  "morph-ring",
-  "square-snake",
-  "comet",
-  "radar",
-  "cube-flip",
-  "wave-bars",
-  "breathing-glow",
-  "dot-ring",
-] as const;
-
-export type MotionLoaderVariant = (typeof MOTION_LOADER_VARIANTS)[number];
+export type MotionLoaderVariant =
+  | "orbit"
+  | "newton-cradle"
+  | "pendulum"
+  | "hourglass"
+  | "morph-ring"
+  | "square-snake"
+  | "comet"
+  | "radar"
+  | "cube-flip"
+  | "wave-bars"
+  | "breathing-glow"
+  | "dot-ring";
 
 export interface MotionLoaderProps {
   className?: string;
@@ -122,7 +120,7 @@ const OrbitLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
         className="absolute inset-0 rounded-full border border-current"
         style={{ opacity: TRACK_OPACITY }}
       />
-      <motion.span
+      <m.span
         animate={reduce ? undefined : { rotate: FULL_TURN }}
         className="absolute inset-0"
         transition={reduce ? undefined : loop(CYCLE / speed, LINEAR)}
@@ -135,7 +133,7 @@ const OrbitLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
             marginTop: -dot * HALF,
           }}
         />
-      </motion.span>
+      </m.span>
     </>
   );
 };
@@ -158,7 +156,7 @@ const NewtonCradleLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
       {CRADLE_IDS.map((id, index) => {
         const keyframes = cradleKeyframes(index);
         return (
-          <motion.span
+          <m.span
             animate={reduce || !keyframes ? undefined : { rotate: keyframes }}
             className="relative block"
             key={id}
@@ -184,7 +182,7 @@ const NewtonCradleLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
               className="absolute bottom-0 left-1/2 rounded-full bg-current"
               style={{ ...dotStyle(ball), marginLeft: -ball * HALF }}
             />
-          </motion.span>
+          </m.span>
         );
       })}
     </span>
@@ -194,7 +192,7 @@ const NewtonCradleLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
 const PendulumLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
   const bob = size * DOT_RATIO * 1.5;
   return (
-    <motion.span
+    <m.span
       animate={
         reduce
           ? undefined
@@ -218,12 +216,12 @@ const PendulumLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
         className="absolute bottom-0 left-1/2 rounded-full bg-current"
         style={{ ...dotStyle(bob), marginLeft: -bob * HALF }}
       />
-    </motion.span>
+    </m.span>
   );
 };
 
 const HourglassLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
-  <motion.svg
+  <m.svg
     animate={
       reduce ? undefined : { rotate: [0, 0, HALF_TURN, HALF_TURN, FULL_TURN] }
     }
@@ -242,11 +240,11 @@ const HourglassLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
   >
     <path d="M5 2h14v2l-6 8 6 8v2H5v-2l6-8-6-8V2z" opacity={TRACK_OPACITY} />
     <path d="M7 4h10l-5 6.5L7 4zm0 16h10l-5-6.5L7 20z" />
-  </motion.svg>
+  </m.svg>
 );
 
 const MorphRingLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
-  <motion.svg
+  <m.svg
     animate={reduce ? undefined : { scale: [1, 0.88, 1] }}
     className="absolute inset-0 stroke-current"
     fill="none"
@@ -255,7 +253,7 @@ const MorphRingLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
     viewBox="0 0 48 48"
     width={size}
   >
-    <motion.circle
+    <m.circle
       animate={reduce ? undefined : { rotate: FULL_TURN }}
       cx="24"
       cy="24"
@@ -266,7 +264,7 @@ const MorphRingLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
       style={{ transformOrigin: "center" }}
       transition={reduce ? undefined : loop(CYCLE / speed, LINEAR)}
     />
-    <motion.circle
+    <m.circle
       animate={reduce ? undefined : { rotate: -FULL_TURN }}
       cx="24"
       cy="24"
@@ -278,7 +276,7 @@ const MorphRingLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
       style={{ transformOrigin: "center" }}
       transition={reduce ? undefined : loop((CYCLE * 1.5) / speed, LINEAR)}
     />
-  </motion.svg>
+  </m.svg>
 );
 
 const SquareSnakeLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
@@ -303,7 +301,7 @@ const SquareSnakeLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
           }}
         />
       ))}
-      <motion.span
+      <m.span
         animate={
           reduce
             ? undefined
@@ -327,7 +325,7 @@ const SquareSnakeLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
 const CometLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
   const dot = size * SMALL_DOT_RATIO;
   return (
-    <motion.span
+    <m.span
       animate={reduce ? undefined : { rotate: FULL_TURN }}
       className="absolute inset-0"
       transition={reduce ? undefined : loop(CYCLE / speed, LINEAR)}
@@ -348,7 +346,7 @@ const CometLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
           />
         </span>
       ))}
-    </motion.span>
+    </m.span>
   );
 };
 
@@ -361,7 +359,7 @@ const RadarLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
         style={{ opacity: TRACK_OPACITY }}
       />
       <span className="absolute inset-0 overflow-hidden rounded-full">
-        <motion.span
+        <m.span
           animate={reduce ? undefined : { rotate: FULL_TURN }}
           className="absolute inset-0"
           style={{
@@ -385,7 +383,7 @@ const RadarLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
 
 const CubeFlipLoader = ({ reduce, size, speed }: LoaderVariantProps) => (
   <span className="absolute inset-0" style={{ perspective: `${size * 3}px` }}>
-    <motion.span
+    <m.span
       animate={
         reduce
           ? undefined
@@ -415,7 +413,7 @@ const WaveBarsLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
       style={{ gap: `${barWidth * HALF}px` }}
     >
       {WAVE_IDS.map((id, index) => (
-        <motion.span
+        <m.span
           animate={
             reduce ? undefined : { scaleY: [WAVE_MIN_SCALE, 1, WAVE_MIN_SCALE] }
           }
@@ -440,7 +438,7 @@ const BreathingGlowLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
   const core = size * HALF;
   return (
     <>
-      <motion.span
+      <m.span
         animate={
           reduce
             ? undefined
@@ -453,7 +451,7 @@ const BreathingGlowLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
         style={{ opacity: GLOW_MIN_OPACITY }}
         transition={reduce ? undefined : loop(SLOW_CYCLE / speed, EASE_IN_OUT)}
       />
-      <motion.span
+      <m.span
         animate={reduce ? undefined : { scale: [1, GLOW_SCALE, 1] }}
         className="rounded-full bg-current"
         style={dotStyle(core)}
@@ -469,7 +467,7 @@ const DotRingLoader = ({ reduce, size, speed }: LoaderVariantProps) => {
   return (
     <>
       {RING_IDS.map((id, index) => (
-        <motion.span
+        <m.span
           animate={reduce ? undefined : { opacity: [1, RING_DOT_FADE] }}
           className="absolute top-1/2 left-1/2 rounded-full bg-current"
           key={id}
@@ -526,27 +524,29 @@ const MotionLoader = ({
   const safeSpeed = speed > 0 ? speed : DEFAULT_SPEED;
 
   return (
-    <span
-      aria-label={label}
-      aria-live="polite"
-      className={cn(
-        "relative inline-flex shrink-0 items-center justify-center",
-        className
-      )}
-      role="status"
-      style={{
-        color: color ?? "currentColor",
-        height: `${size}px`,
-        width: `${size}px`,
-      }}
-    >
-      <Renderer
-        reduce={Boolean(shouldReduceMotion)}
-        size={size}
-        speed={safeSpeed}
-      />
-      <span className="sr-only">{label}</span>
-    </span>
+    <LazyMotion features={domAnimation}>
+      <span
+        aria-label={label}
+        aria-live="polite"
+        className={cn(
+          "relative inline-flex shrink-0 items-center justify-center",
+          className
+        )}
+        role="status"
+        style={{
+          color: color ?? "currentColor",
+          height: `${size}px`,
+          width: `${size}px`,
+        }}
+      >
+        <Renderer
+          reduce={Boolean(shouldReduceMotion)}
+          size={size}
+          speed={safeSpeed}
+        />
+        <span className="sr-only">{label}</span>
+      </span>
+    </LazyMotion>
   );
 };
 

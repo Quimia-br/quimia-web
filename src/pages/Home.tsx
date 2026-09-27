@@ -13,7 +13,12 @@ function Home() {
   return (
     <main className="grid grid-cols-2 gap-5 p-6 align-middle justify-center">
       <MainTitle title="Title" description="Description" />
-      <Button ref={ref} onClick={() => toggleTheme()} size="icon">
+      <Button
+        ref={ref}
+        aria-label={isDark ? "Ativar tema claro" : "Ativar tema escuro"}
+        onClick={() => toggleTheme()}
+        size="icon"
+      >
         {isDark ? <Moon /> : <Sun />}
       </Button>
       <TextField

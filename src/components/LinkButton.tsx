@@ -14,9 +14,7 @@ function LinkButton({
         className,
       )}
       {...linkProps}
-    >
-      Entre aqui
-    </Link>
+    />
   );
 }
 

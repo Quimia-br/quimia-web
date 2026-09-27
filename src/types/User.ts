@@ -20,5 +20,5 @@ export interface LoginResponse {
   accessToken: string;
   tokenType: "Bearer";
   expiresIn: number;
-  user: User;
+  user: UserSummary;
 }
