@@ -6,6 +6,10 @@ import FormTextField from "@/components/FormTextField";
 import LinkButton from "@/components/LinkButton";
 import { useLogin } from "@/hooks/use-login";
 import { useLocation, useNavigate } from "react-router-dom";
+import { loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
+import { useCallback } from "react";
+
+const STORAGE_KEY = "quimia:login-draft";
 
 const formSchema = z.object({
   email: z.email("Informe um e-mail valido"),
@@ -17,10 +21,10 @@ function LoginForm() {
   const location = useLocation();
   const navigate = useNavigate();
   const form = useForm({
-    defaultValues: {
+    defaultValues: loadFormDraft(STORAGE_KEY, {
       email: "",
       password: "",
-    },
+    }),
     validators: {
       onDynamic: formSchema,
     },
@@ -53,6 +57,17 @@ function LoginForm() {
       ]),
     );
   });
+
+  const values = useSelector(form.store, (state) => state.values);
+
+  const selectLoginDraft = useCallback(
+    (current: typeof values) => ({
+      email: current.email,
+    }),
+    [],
+  );
+
+  useFormDraft(STORAGE_KEY, values, selectLoginDraft);
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -116,8 +131,7 @@ function LoginForm() {
           )}
         </form.Subscribe>
         <p className="text-base text-center text-foreground-subtle">
-          Não tem conta no Quimia?{" "}
-          <LinkButton to="/signup">Crie já</LinkButton>
+          Não tem conta no Quimia? <LinkButton to="/signup">Crie já</LinkButton>
         </p>
       </div>
     </Form>

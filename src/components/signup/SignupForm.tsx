@@ -5,6 +5,10 @@ import Form from "@/components/smoothui/form";
 import FormTextField from "@/components/FormTextField";
 import { cnpjSchema, formatCNPJ } from "@/lib/utils/formatCnpj";
 import LinkButton from "@/components/LinkButton";
+import { clearFormDraft, loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
+import { useCallback } from "react";
+
+const STORAGE_KEY = "quimia:signup-draft";
 
 const formSchema = z.object({
   cnpj: cnpjSchema,
@@ -14,11 +18,11 @@ const formSchema = z.object({
 
 function SignupForm() {
   const form = useForm({
-    defaultValues: {
+    defaultValues: loadFormDraft(STORAGE_KEY, {
       cnpj: "",
       email: "",
       password: "",
-    },
+    }),
     validators: {
       onDynamic: formSchema,
     },
@@ -26,6 +30,9 @@ function SignupForm() {
       mode: "submit",
       modeAfterSubmission: "change",
     }),
+    onSubmit: async () => {
+      clearFormDraft("quimia:signup-draft");
+    },
   });
   const errors = useSelector(form.store, (state) => {
     const rawErrors = state.errorMap.onDynamic;
@@ -38,6 +45,18 @@ function SignupForm() {
       ]),
     );
   });
+
+  const values = useSelector(form.store, (state) => state.values);
+
+  const selectSignupDraft = useCallback(
+    (values: { cnpj: string; email: string; password: string }) => ({
+      cnpj: values.cnpj,
+      email: values.email,
+    }),
+    [],
+  );
+
+  useFormDraft(STORAGE_KEY, values, selectSignupDraft);
 
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
