@@ -31,6 +31,7 @@ function renderLoginForm(
 
 describe("LoginForm", () => {
   beforeEach(() => {
+    localStorage.clear();
     vi.mocked(login).mockReset();
   });
 

@@ -1,10 +1,14 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import SignupForm from "./SignupForm";
 
 describe("SignupForm", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("enables submit only after every input has a value", async () => {
     const user = userEvent.setup();
 
