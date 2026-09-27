@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import ClearableInput from "./ClearableInput";
+import ClearableInput from "./ActionInput";
 
 describe("ClearableInput", () => {
   it("clears an uncontrolled value, calls onClear, and restores focus", async () => {

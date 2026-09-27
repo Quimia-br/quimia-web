@@ -1,12 +1,12 @@
 import { RouterProvider } from "react-router-dom";
-import { SpacemanThemeProvider } from "@space-man/react-theme-animation";
-import router from "./routes";
+import { AppProviders } from "@/providers";
+import router from "@/routes";
 
 function App() {
   return (
-    <SpacemanThemeProvider defaultTheme="system" defaultColorTheme="default">
+    <AppProviders>
       <RouterProvider router={router} />
-    </SpacemanThemeProvider>
+    </AppProviders>
   );
 }
 
