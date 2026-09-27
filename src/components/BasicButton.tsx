@@ -2,13 +2,13 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 
-type BasicButtonProps = Omit<
+interface BasicButtonProps extends Omit<
   ComponentProps<typeof Button>,
   "size" | "variant"
-> & {
+> {
   icon?: ReactNode;
   variant?: "primary" | "secondary";
-};
+}
 
 function BasicButton({
   children,
@@ -23,7 +23,7 @@ function BasicButton({
       type={type}
       variant={variant === "primary" ? "default" : "secondary"}
       size="basic"
-      className={cn("relative", className)}
+      className={cn("relative h-14", className)}
       {...props}
     >
       {icon && (

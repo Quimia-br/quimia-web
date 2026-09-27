@@ -1,18 +1,17 @@
 import { useId } from "react";
-import ClearableInput from "./ClearableInput";
+import ActionInput from "./ActionInput";
 import { Field, FieldLabel, FieldDescription, FieldError } from "./ui/field";
-import { Input } from "./ui/input";
 import { cn } from "cn";
 
-type TextFieldProps = React.ComponentProps<typeof Input> & {
+interface TextFieldProps extends React.ComponentProps<typeof ActionInput> {
   label?: string;
   description?: string;
   error?: string;
   hideLabel?: boolean;
   hideDescription?: boolean;
   hideErrorDescription?: boolean;
-  onClear?: () => void;
-};
+  onClick?: () => void;
+}
 
 function TextField({
   label,
@@ -21,7 +20,7 @@ function TextField({
   hideLabel = false,
   hideDescription = false,
   hideErrorDescription = false,
-  onClear,
+  onClick,
   ...inputProps
 }: TextFieldProps) {
   const generatedId = useId();
@@ -40,7 +39,7 @@ function TextField({
   };
 
   return (
-    <Field className="gap-4 font-medium" data-invalid={!!error}>
+    <Field className="gap-4 text-base font-medium" data-invalid={!!error}>
       {label && (
         <FieldLabel
           htmlFor={inputId}
@@ -49,11 +48,9 @@ function TextField({
           {label}
         </FieldLabel>
       )}
-      {onClear ? (
-        <ClearableInput {...sharedInputProps} onClear={onClear} />
-      ) : (
-        <Input {...sharedInputProps} />
-      )}
+
+      <ActionInput {...sharedInputProps} onClick={onClick} />
+
       {error ? (
         <FieldError
           id={errorId}

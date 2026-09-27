@@ -1,13 +1,32 @@
 import { createBrowserRouter } from "react-router-dom";
-import RouteErrorBoundary from "./components/RouteErrorBoundary";
-import Home from "./pages/Home";
+import RouteErrorBoundary from "@/pages/RouteErrorBoundary";
+import Home from "@/pages/Home";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import ProtectedRoute from "@/lib/ProtectedRoute";
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    Component: Home,
+    path: "/login",
+    Component: Login,
     ErrorBoundary: RouteErrorBoundary,
+  },
+  {
+    path: "/signup",
+    Component: Signup,
+    ErrorBoundary: RouteErrorBoundary,
+  },
+  {
+    Component: ProtectedRoute,
+    ErrorBoundary: RouteErrorBoundary,
+    children: [
+      {
+        path: "/",
+        Component: Home,
+        ErrorBoundary: RouteErrorBoundary,
+      },
+    ],
   },
 ]);
 
-export default router
+export default router;

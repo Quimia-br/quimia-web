@@ -1,6 +1,6 @@
 import { cn } from "cn";
 
-type MainTitleProps = {
+interface MainTitleProps {
   title: string;
   description?: string;
   className?: string;
@@ -8,10 +8,10 @@ type MainTitleProps = {
 
 function MainTitle({ title, description, className }: MainTitleProps) {
   return (
-    <hgroup className={cn("text-[1rem]", className)}>
-      <h1 className="text-display font-medium text-text-primary">{title}</h1>
+    <hgroup className={cn("text-xl", className)}>
+      <h1 className="font-medium text-display text-text-primary">{title}</h1>
       {description && (
-        <p className="text-subtitle font-normal text-text-secondary">
+        <p className="font-normal text-subtitle text-text-secondary">
           {description}
         </p>
       )}
