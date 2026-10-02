@@ -1,31 +1,339 @@
-name: CI
+name: Quimia Web CI and Render Release
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RENDER_URL: https://quimia.onrender.com
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
+      - name: Checkout source
+        uses: actions/checkout@v7
 
-    - name: Setup pnpm and Node.js
-      uses: pnpm/setup@v1
-      with:
-        runtime: node@24
-        cache: true
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v1
+        with:
+          runtime: node@24
+          cache: true
 
-    - name: Install and Build
-      run: |
-        pnpm install --frozen-lockfile
-        pnpm run build
+      - name: Type-check and build the production bundle
+        id: build
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm run build
+          test -f dist/index.html
 
-    - name: Lint and Test
-      run: |
-        pnpm run lint
-        pnpm run test
+      - name: Share the bundle with the gated artifact job
+        uses: actions/upload-artifact@v7
+        with:
+          name: quimia-web-dist
+          path: dist/**
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Explain the Build check
+        if: always()
+        env:
+          CHECK_RESULT: ${{ job.status }}
+        run: |
+          {
+            echo '### Build'
+            echo
+            echo "**Resultado:** ${CHECK_RESULT}"
+            echo
+            echo '**O que valida:** instalação com lockfile congelado, checagem de tipos TypeScript e build de produção do Vite.'
+            echo
+            echo '**Critério de aprovação:** `pnpm install --frozen-lockfile` e `pnpm run build` (`tsc -b && vite build`) terminam sem erro e `dist/index.html` existe.'
+            if [ "${CHECK_RESULT}" = success ]; then
+              echo
+              echo 'O bundle foi produzido e disponibilizado ao job de artefato.'
+            else
+              echo
+              echo 'Não passou. Abra o passo de build acima; os logs indicam o lockfile desatualizado, o erro de tipos ou a falha do Vite.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v1
+        with:
+          runtime: node@24
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        id: lint
+        run: pnpm run lint
+
+      - name: Explain the Lint check
+        if: always()
+        env:
+          CHECK_RESULT: ${{ job.status }}
+        run: |
+          {
+            echo '### Lint'
+            echo
+            echo "**Resultado:** ${CHECK_RESULT}"
+            echo
+            echo '**O que valida:** regras ESLint do projeto, incluindo React Hooks, React Refresh e TanStack Query.'
+            echo
+            echo '**Critério de aprovação:** `pnpm run lint` termina sem erros.'
+            if [ "${CHECK_RESULT}" = success ]; then
+              echo
+              echo 'Nenhuma violação de lint foi encontrada.'
+            else
+              echo
+              echo 'Não passou. Consulte o log do ESLint; ele lista arquivo, linha e regra violada.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v1
+        with:
+          runtime: node@24
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Vitest
+        id: tests
+        run: pnpm run test
+
+      - name: Explain the Unit tests check
+        if: always()
+        env:
+          CHECK_RESULT: ${{ job.status }}
+        run: |
+          {
+            echo '### Unit tests'
+            echo
+            echo "**Resultado:** ${CHECK_RESULT}"
+            echo
+            echo '**O que valida:** testes Vitest com jsdom e Testing Library.'
+            echo
+            echo '**Critério de aprovação:** `pnpm run test` (`vitest run`) termina sem testes com falha.'
+            if [ "${CHECK_RESULT}" = success ]; then
+              echo
+              echo 'Todos os testes executados passaram.'
+            else
+              echo
+              echo 'Não passou. Consulte o log do Vitest para ver o teste e a asserção que falharam.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  artifact:
+    name: Render artifact
+    needs: [build, lint, unit-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download the validated bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: quimia-web-dist
+          path: dist
+
+      - name: Validate the static bundle
+        id: package
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          grep -q '<div id="root"' dist/index.html
+          js_count="$(find dist/assets -type f -name '*.js' | wc -l)"
+          if [ "$js_count" -lt 1 ]; then
+            echo 'The bundle has no JavaScript assets.' >&2
+            exit 1
+          fi
+          mkdir -p target/render
+          (cd dist && zip -qr ../target/render/quimia-web.zip .)
+
+      - name: Upload the release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: quimia-web-render
+          path: target/render/quimia-web.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Explain the Render artifact check
+        if: always()
+        env:
+          CHECK_RESULT: ${{ job.status }}
+        run: |
+          {
+            echo '### Render artifact'
+            echo
+            echo "**Resultado:** ${CHECK_RESULT}"
+            echo
+            echo '**O que valida:** o bundle estático que o Render vai publicar tem a estrutura esperada de uma SPA Vite.'
+            echo
+            echo '**Critério de aprovação:** `dist/index.html` existe, contém o ponto de montagem `#root` e há ao menos um asset JavaScript. O ZIP é publicado como artefato para auditoria.'
+            if [ "${CHECK_RESULT}" = success ]; then
+              echo
+              echo 'O pacote foi validado e publicado como artefato do workflow.'
+            else
+              echo
+              echo 'Não passou. Consulte a validação do bundle nos logs.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-render:
+    name: Deploy to Render
+    needs: [build, lint, unit-tests, artifact]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: render
+      url: ${{ env.RENDER_URL }}
+    steps:
+      - name: Trigger the Render deploy hook for the released commit
+        id: deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo 'Missing RENDER_DEPLOY_HOOK_URL secret.' >&2
+            exit 1
+          fi
+          if ! [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo 'Invalid release tag.' >&2
+            exit 1
+          fi
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --max-time 30 --request POST "${RENDER_DEPLOY_HOOK_URL}&ref=${RELEASE_SHA}")"
+          if [ "$status" != '200' ] && [ "$status" != '201' ]; then
+            echo "Render deploy hook answered HTTP $status." >&2
+            exit 1
+          fi
+          echo "Render deploy requested for ${TAG_NAME} (${RELEASE_SHA})."
+
+      - name: Wait for the published site
+        id: smoke-check
+        run: |
+          set -euo pipefail
+          endpoint="${RENDER_URL}/"
+          fallback="${RENDER_URL}/rota-inexistente-smoke"
+          deadline=$((SECONDS + 600))
+          last_status='000'
+
+          while (( SECONDS < deadline )); do
+            last_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --connect-timeout 10 --max-time 15 "$endpoint" || true)"
+            fallback_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --connect-timeout 10 --max-time 15 "$fallback" || true)"
+
+            if [ "$last_status" = '200' ] && [ "$fallback_status" = '200' ]; then
+              echo 'Smoke check passed: the site and its SPA fallback answered HTTP 200.'
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "Smoke check timed out after 600 seconds; last HTTP status was $last_status." >&2
+          exit 1
+
+      - name: Explain the Render deploy check
+        if: always()
+        env:
+          CHECK_RESULT: ${{ job.status }}
+        run: |
+          {
+            echo '### Deploy to Render'
+            echo
+            echo "**Resultado:** ${CHECK_RESULT}"
+            echo
+            echo '**O que valida:** o deploy do commit da Release foi solicitado ao Render e o site publicado responde.'
+            echo
+            echo '**Critério de aprovação:** o Deploy Hook aceita a requisição (HTTP 200/201) e, em até 10 minutos, `/` e uma rota inexistente (fallback da SPA) retornam HTTP 200.'
+            if [ "${CHECK_RESULT}" = success ]; then
+              echo
+              echo 'Deploy solicitado e site no ar.'
+            else
+              echo
+              echo 'Não passou. Verifique o secret `RENDER_DEPLOY_HOOK_URL`, o log de build no painel do Render e a regra de rewrite `/* -> /index.html`.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  workflow-summary:
+    name: CI summary
+    needs: [build, lint, unit-tests, artifact, deploy-render]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize every gate and enforce the workflow result
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          LINT_RESULT: ${{ needs.lint.result }}
+          TESTS_RESULT: ${{ needs.unit-tests.result }}
+          ARTIFACT_RESULT: ${{ needs.artifact.result }}
+          DEPLOY_RESULT: ${{ needs.deploy-render.result }}
+        run: |
+          set -euo pipefail
+          {
+            echo '## Resultado geral do workflow'
+            echo
+            echo '| Check | Resultado | O que prova |'
+            echo '|---|---|---|'
+            printf '| Build | `%s` | Tipos válidos e bundle Vite de produção. |\n' "$BUILD_RESULT"
+            printf '| Lint | `%s` | Regras ESLint do projeto. |\n' "$LINT_RESULT"
+            printf '| Unit tests | `%s` | Testes Vitest. |\n' "$TESTS_RESULT"
+            printf '| Render artifact | `%s` | Bundle estático validado (`index.html`, `#root`, assets JS). |\n' "$ARTIFACT_RESULT"
+            if [ "$EVENT_NAME" = 'release' ]; then
+              printf '| Deploy to Render | `%s` | Deploy Hook aceito e smoke check HTTP 200. |\n' "$DEPLOY_RESULT"
+            else
+              printf '| Deploy to Render | `%s` | Ignorado: só executa em Release publicada. |\n' "$DEPLOY_RESULT"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$BUILD_RESULT" != success ] \
+            || [ "$LINT_RESULT" != success ] \
+            || [ "$TESTS_RESULT" != success ] \
+            || [ "$ARTIFACT_RESULT" != success ]; then
+            echo 'At least one required CI gate did not succeed.' >&2
+            exit 1
+          fi
+
+          if [ "$EVENT_NAME" = 'release' ] && [ "$DEPLOY_RESULT" != success ]; then
+            echo 'The published release did not complete the Render deployment check.' >&2
+            exit 1
+          fi
+
+          echo 'All checks required for this event succeeded.'
