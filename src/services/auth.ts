@@ -1,8 +1,17 @@
 import { api } from "@/lib/api";
-import { clearAccessToken, setAccessToken } from "@/lib/auth-token";
-import type { LoginCredentials, LoginResponse, UserMe } from "@/types/User";
+import { useAuthStore } from "@/lib/auth-token";
+import type { EmpresaSummary, LoginCredentials, LoginResponse, RegisterRequest } from "@/types/Empresa";
 
-const path = "/api/v1/auth"
+const path = "/empresas/auth"
+
+export async function register(credentials: RegisterRequest) {
+  const { data } = await api.post<EmpresaSummary>(
+    `${path}/register`,
+    credentials,
+  )
+
+  return data
+}
 
 export async function login(credentials: LoginCredentials) {
   const { data } = await api.post<LoginResponse>(
@@ -10,21 +19,23 @@ export async function login(credentials: LoginCredentials) {
     credentials,
   )
 
-  setAccessToken(data.accessToken)
+  useAuthStore.setState({
+    accessToken: data.accessToken,
+    user: data.user,
+    isAuthenticated: true
+  });
 
   return data.user
-}
-
-export async function getMe() {
-  const { data } = await api.get<UserMe>(`${path}/me`)
-
-  return data
 }
 
 export async function logout() {
   try {
     await api.post(`${path}/logout`)
   } finally {
-    clearAccessToken()
+    useAuthStore.setState({
+      accessToken: null,
+      user: null,
+      isAuthenticated: false
+    });
   }
 }

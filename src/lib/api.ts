@@ -1,9 +1,11 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import { getAccessToken } from "@/lib/auth-token";
+import { useAuthStore } from "@/lib/auth-token";
+
+const path = "/api/v1"
 
 export const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: `${import.meta.env.VITE_API_KEY}${path}`,
   withCredentials: true,
   withXSRFToken: true,
   xsrfCookieName: "quimia_csrf",
@@ -14,7 +16,7 @@ export const api: AxiosInstance = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const accessToken = getAccessToken();
+  const accessToken = useAuthStore.getState().accessToken;
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;

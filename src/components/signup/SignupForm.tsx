@@ -5,23 +5,34 @@ import Form from "@/components/smoothui/form";
 import FormTextField from "@/components/FormTextField";
 import { cnpjSchema, formatCNPJ } from "@/lib/utils/formatCnpj";
 import LinkButton from "@/components/LinkButton";
-import { clearFormDraft, loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
+import {
+  clearFormDraft,
+  loadFormDraft,
+  useFormDraft,
+} from "@/hooks/use-form-draft";
 import { useCallback } from "react";
+import { useRegister } from "@/hooks/use-register";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const STORAGE_KEY = "quimia:signup-draft";
 
 const formSchema = z.object({
+  nome: z.string().nonempty("Informe o nome da empresa"),
   cnpj: cnpjSchema,
   email: z.email("Informe um e-mail valido"),
-  password: z.string().nonempty("Informe uma senha"),
+  senha: z.string().nonempty("Informe uma senha"),
 });
 
 function SignupForm() {
+  const register = useRegister();
+  const navigate = useNavigate();
   const form = useForm({
     defaultValues: loadFormDraft(STORAGE_KEY, {
+      nome: "",
       cnpj: "",
       email: "",
-      password: "",
+      senha: "",
     }),
     validators: {
       onDynamic: formSchema,
@@ -30,8 +41,54 @@ function SignupForm() {
       mode: "submit",
       modeAfterSubmission: "change",
     }),
-    onSubmit: async () => {
-      clearFormDraft("quimia:signup-draft");
+    onSubmit: async ({ value }) => {
+      try {
+        await register.mutateAsync({
+          nome: value.nome,
+          cnpj: value.cnpj,
+          email: value.email,
+          senha: value.senha,
+        });
+
+        clearFormDraft(STORAGE_KEY);
+
+        navigate("/login");
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const apiError = error.response?.data as
+            | { message?: string }
+            | undefined;
+          const errorBody = apiError?.message || "";
+
+          if (errorBody === "email_in_use") {
+            form.setFieldMeta("email", (prev) => ({
+              ...prev,
+              errorMap: {
+                ...prev.errorMap,
+                onDynamic: "Este e-mail já está em uso.",
+              },
+            }));
+          }
+          if (errorBody === "cnpj_in_use") {
+            form.setFieldMeta("cnpj", (prev) => ({
+              ...prev,
+              errorMap: {
+                ...prev.errorMap,
+                onDynamic: "Este CNPJ já está cadastrado.",
+              },
+            }));
+          }
+          if (errorBody === "invalid_cnpj") {
+            form.setFieldMeta("cnpj", (prev) => ({
+              ...prev,
+              errorMap: {
+                ...prev.errorMap,
+                onDynamic: "O CNPJ informado é inválido.",
+              },
+            }));
+          }
+        }
+      }
     },
   });
   const errors = useSelector(form.store, (state) => {
@@ -49,7 +106,8 @@ function SignupForm() {
   const values = useSelector(form.store, (state) => state.values);
 
   const selectSignupDraft = useCallback(
-    (values: { cnpj: string; email: string; password: string }) => ({
+    (values: { nome: string; cnpj: string; email: string; senha: string }) => ({
+      nome: values.nome,
       cnpj: values.cnpj,
       email: values.email,
     }),
@@ -64,7 +122,20 @@ function SignupForm() {
   };
 
   return (
-    <Form className="w-full gap-6" errors={errors} onFormSubmit={handleSubmit}>
+    <Form className="w-full gap-4" errors={errors} onFormSubmit={handleSubmit}>
+      <form.Field name="nome">
+        {(field) => (
+          <FormTextField
+            name={field.name}
+            label="Nome"
+            placeholder="Quimia"
+            value={field.state.value}
+            onChange={(e) => field.handleChange(e.target.value)}
+            onBlur={field.handleBlur}
+          />
+        )}
+      </form.Field>
+
       <form.Field name="cnpj">
         {(field) => (
           <FormTextField
@@ -95,7 +166,7 @@ function SignupForm() {
         )}
       </form.Field>
 
-      <form.Field name="password">
+      <form.Field name="senha">
         {(field) => (
           <FormTextField
             name={field.name}

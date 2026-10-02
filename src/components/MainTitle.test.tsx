@@ -25,4 +25,11 @@ describe("MainTitle", () => {
 
     expect(container.querySelector("hgroup")).toHaveClass("max-w-4xl");
   });
+
+  it("replaces the default title styles when titleClassName is provided", () => {
+    render(<MainTitle title="Dashboard" />);
+
+    const title = screen.getByRole("heading", { level: 1, name: "Dashboard" });
+    expect(title).not.toHaveClass("text-display");
+  });
 });
