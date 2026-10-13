@@ -145,7 +145,7 @@ Figma: tela [1:41](https://www.figma.com/design/eYfOhBxIZfbQaq7MygMTXV?node-id=1
 
 ## SignupForm
 
-Não recebe props e usa os mesmos providers do exemplo de LoginForm. TanStack/Zod validam nome não vazio, CNPJ e e-mail válidos, senha não vazia. CNPJ é formatado durante a digitação. As regras adicionais de senha vêm da API.
+Não recebe props. Precisa do router com rota `/login` e de `localStorage`; não depende de `QueryClientProvider`. TanStack Form/Zod validam nome não vazio, CNPJ e e-mail válidos, senha não vazia. CNPJ é formatado durante a digitação. As regras adicionais de senha vêm da API.
 
 O payload é `{ nome, cnpj, email, senha }`; o CNPJ permanece formatado, conforme o contrato atual. Após o cadastro, remove `quimia:signup-draft` e retorna a `/login` com `replace`. O rascunho salva somente nome/CNPJ/e-mail. O campo de senha usa `autoComplete="new-password"`. O link “Entre aqui” retorna ao login.
 
@@ -156,7 +156,7 @@ O payload é `{ nome, cnpj, email, senha }`; o CNPJ permanece formatado, conform
 | `weak_password`, `password_too_long` | Erro na senha. |
 | Erro inesperado | Alerta genérico, formulário e rascunho preservados. |
 
-Testes: habilitação do botão, erros locais preservados em campos não editados, máscara/payload, sucesso e exclusão do rascunho, cada detail conhecido, autocomplete de nova senha, restauração do rascunho sem senha, falha inesperada, bloqueio de submissão duplicada e link de login. Os hooks, router, query client e campos são reais; apenas `services/auth` é mockado.
+Testes: habilitação do botão, erros locais preservados em campos não editados, máscara/payload, sucesso e exclusão do rascunho, cada detail conhecido, autocomplete de nova senha, restauração do rascunho sem senha, falha inesperada, bloqueio de submissão duplicada e link de login. O router e os campos são reais; apenas `services/auth` é mockado.
 
 Figma: tela [334:278](https://www.figma.com/design/eYfOhBxIZfbQaq7MygMTXV?node-id=334-278), primeira linha [588:2557](https://www.figma.com/design/eYfOhBxIZfbQaq7MygMTXV?node-id=588-2557), e-mail [334:286](https://www.figma.com/design/eYfOhBxIZfbQaq7MygMTXV?node-id=334-286), senha [334:287](https://www.figma.com/design/eYfOhBxIZfbQaq7MygMTXV?node-id=334-287). CNPJ/nome continuam lado a lado a partir de `md`. Pendências: código usa “Nome”/“Senha”, design usa “Razão Social”/“Crie sua senha”; design mostra gap de 36 px na primeira linha, código usa 16 px. A classe atual `*:flex1` não corresponde à utilidade Tailwind `*:flex-1`, portanto a igualdade de largura dos dois campos precisa ser avaliada no navegador. A legenda de cadastro no Figma repete o convite para criar conta; o código mantém o convite coerente para quem já tem conta.
 

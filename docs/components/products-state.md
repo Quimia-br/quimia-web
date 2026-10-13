@@ -27,9 +27,3 @@ Os testes adjacentes exercitam providers e botões reais: alternância por cliqu
 node ./node_modules/vitest/vitest.mjs run src/components/ThemeToogle.test.tsx src/components/Header.test.tsx src/components/DataDisplayToggle.test.tsx src/lib/theme-provider.test.tsx src/lib/data-display-provider.test.tsx --pool=threads --maxWorkers=1 --testTimeout=15000
 node ./node_modules/vitest/vitest.mjs run --pool=threads --maxWorkers=1 --testTimeout=15000
 ```
-
-Na verificação inicial, o foco passou com 19/19 testes em cinco arquivos; a suíte completa passou com 267/267 em 33 arquivos. Após a correção do intervalo entre renderização e assinatura de `matchMedia`, o teste adicional em `ThemeToogle.test.tsx` teve falha RED esperada e o foco passou com 20/20 em cinco arquivos. A suíte completa inicial não foi repetida nessa correção pontual.
-
-Na integração do controller sobre a versão inicial, o build terminou com exit 0 e aviso de bundle existente de aproximadamente 858 kB. Em Chrome nas larguras de 1280 e 375 px, passaram mudança do tema do SO, escolha explícita, teclado, navegação/remontagem/reload, isolamento por chave e storage inválido ou bloqueado, sem erros de página nem overflow. O React Doctor permaneceu em 52/100 com 33 diagnósticos já existentes. A correção pontual subsequente cobre um intervalo de tempo que esses cenários de navegador não forçavam.
-
-Conferência final em 12/10/2026, após a correção: **268 testes passaram em 33 arquivos** (147,40 s), usando o comando de suíte completa acima. Build TypeScript/Vite e navegador passaram novamente; o bundle permaneceu em aproximadamente 858 kB. Lint dos arquivos alterados passou. React Doctor manteve 52/100 e os mesmos 33 diagnósticos da baseline; retorna código 1 por esses achados e seu escopo Git não inclui todos os arquivos novos. Revisões independentes da tarefa e da integração final foram aprovadas. Sem commits ou alteração de estado remoto.

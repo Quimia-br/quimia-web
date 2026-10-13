@@ -68,7 +68,7 @@ Os controles mantêm nome “Página N de total”, `aria-current="page"`, acion
 
 Chrome com CSS real: larguras de 1280 e 375 px, temas claro/escuro, variantes de duas a cinco e doze páginas, além de total de 1000. Conferidos largura fluida, proporção 3:1, hover transparente, preferência de movimento reduzido, histórico, preservação dos filtros e reset de `p` ao pesquisar; sem overflow horizontal ou erros de JavaScript. O endpoint futuro não foi testado nem conectado.
 
-No refinamento da animação, uma captura por frame confirmou crescimento e redução simultâneos, monotônicos e sem overshoot, além de cores intermediárias durante a troca. A nova curva mantém o início mais gradual do que a anterior (`[0.22, 1, 0.36, 1]`). Validado nos dois temas em desktop e mobile, incluindo mudança sem transição com movimento reduzido. Os 22 testes de PageIndicator e o lint passaram novamente. React Doctor no escopo alterado manteve os diagnósticos anteriores.
+No refinamento da animação, uma captura por frame confirmou crescimento e redução simultâneos, monotônicos e sem overshoot, além de cores intermediárias durante a troca. A nova curva mantém o início mais gradual do que a anterior (`[0.22, 1, 0.36, 1]`). Com movimento reduzido, a mudança ocorre sem transição.
 
 ```powershell
 pnpm test src/components/PageIndicator.test.tsx --pool=threads --maxWorkers=1

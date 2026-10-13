@@ -15,4 +15,4 @@ pnpm run build
 pnpm test --pool=threads --maxWorkers=1 --testTimeout=15000
 ```
 
-O [índice dos componentes](docs/components/components.md) contém os guias de uso. [Prints dos componentes](docs/screenshots/components/README.md) e [revisão do React Doctor](docs/react-doctor-review.md) documentam a validação desta implementação.
+O [índice dos componentes](docs/components/components.md) contém os guias de uso.
