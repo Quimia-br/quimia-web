@@ -1,13 +1,9 @@
-import MainTitle from "@/components/MainTitle";
-import ThemeToogle from "@/components/ThemeToogle";
+import Header from "@/components/Header";
 
 function Profile() {
   return (
     <>
-      <header className="flex items-center px-4">
-        <MainTitle className="flex-1" title="Perfil" />
-        <ThemeToogle />
-      </header>
+      <Header title="Perfil" />
     </>
   );
 }

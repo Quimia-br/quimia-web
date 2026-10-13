@@ -130,7 +130,7 @@ function LoginForm() {
             </BasicButton>
           )}
         </form.Subscribe>
-        <p className="text-base text-center text-foreground-subtle">
+        <p className="text-base text-center text-muted-foreground">
           Não tem conta no Quimia? <LinkButton to="/signup">Crie já</LinkButton>
         </p>
       </div>

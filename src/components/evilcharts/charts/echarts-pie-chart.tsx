@@ -26,6 +26,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -36,7 +37,8 @@ import {
 import { TooltipComponent, type TooltipComponentOption } from "echarts/components";
 import { LegendOverlay, type LegendVariant } from "@/components/evilcharts/ui/echarts-legend";
 import { PieChart, type PieSeriesOption } from "echarts/charts";
-import { motion, useReducedMotion } from "motion/react";
+import { LazyMotion, domAnimation, useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import type { ComposeOption } from "echarts/core";
 import * as echarts from "echarts/core";
 
@@ -864,113 +866,77 @@ type LiveState = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component
+// Imperative chart lifecycle
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Apache ECharts port of the EvilCharts pie chart, exposing a compound-as-config
- * API so its JSX reads identically to the Recharts twin. The root owns the data,
- * config, selection state, loading skeleton, and intro reveal; every visual part —
- * `<Pie>`, `<Tooltip>`, `<Legend>`, `<Background>` — is composed as a declarative
- * child that renders nothing. The root walks those children by reference and
- * drives a single imperative ECharts instance. Fully self-contained: its only
- * dependencies are `react`, `echarts`, and `motion`.
- */
-export function EChartsPieChart<TData extends Record<string, unknown>>({
+type PieRuntimeArgs = {
+  data: Record<string, unknown>[];
+  config: ChartConfig;
+  dataKey: string;
+  nameKey: string;
+  pie: PieSlot | null;
+  tooltipSlot: TooltipSlot;
+  legendSlot: LegendSlot;
+  selectedSector: string | null;
+  selectSector: (name: string | null) => void;
+  sectorKeys: string[];
+  renderer: EChartsRenderer;
+  animation: boolean;
+  shouldReduceMotion: boolean | null;
+  isLoading: boolean;
+  chartOptions?: Record<string, unknown>;
+};
+
+// Owns the ECharts instance, its DOM observers, and all imperative option updates.
+// The root keeps declarative configuration and selection; this hook performs work
+// after React commits so refs never influence render output.
+function usePieRuntime({
   data,
   config,
   dataKey,
   nameKey,
-  className,
-  renderer = DEFAULT_ECHARTS_RENDERER,
-  animation = true,
-  defaultSelectedSector = null,
-  selectedSector: selectedSectorProp,
-  onSelectionChange,
-  isLoading = false,
+  pie,
+  tooltipSlot,
+  legendSlot,
+  selectedSector,
+  selectSector,
+  sectorKeys,
+  renderer,
+  animation,
+  shouldReduceMotion,
+  isLoading,
   chartOptions,
-  children,
-}: EChartsPieChartProps<TData>) {
-  const rawId = useId();
-  const chartId = `chart-${rawId.replace(/:/g, "")}`;
-
+}: PieRuntimeArgs) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const echartsRef = useRef<EChartsInstance | null>(null);
-
-  // The single imperative surface (see LiveState). `resolved` lives here rather
-  // than in state: as state it would force an extra render pass and an effect
-  // whose only job is to trigger the option push. The object identity is stable
-  // for the component's lifetime.
-  const live = useRef<LiveState>({
+  const liveRef = useRef<LiveState>({
     resolved: null,
     hasRevealed: false,
-    handlers: {
-      isClickable: false,
-      selectedSector: defaultSelectedSector,
-      selectSector: () => {},
-    },
+    handlers: { isClickable: false, selectedSector: null, selectSector: () => {} },
     repush: () => {},
-  }).current;
+  });
 
-  const shouldReduceMotion = useReducedMotion();
-
-  // Selection is controlled when the `selectedSector` prop is provided; otherwise
-  // the internal state (seeded by defaultSelectedSector) drives it.
-  const [internalSelectedSector, setSelectedSector] = useState<string | null>(
-    defaultSelectedSector,
-  );
-  const selectedSector =
-    selectedSectorProp !== undefined ? selectedSectorProp : internalSelectedSector;
-
-  // ── Declarative config, collected from children by reference ─────────────────
-  const collected = useMemo(() => collectConfig(children), [children]);
-  const { pie, tooltip: tooltipSlot, legend: legendSlot, background: backgroundSlot } = collected;
-
-  // Sector names in data order — the keys color resolution, the legend, and the
-  // click handler all agree on. Config is keyed by these same names.
-  const sectorKeys = useMemo(
-    () => data.map((row) => String(row[nameKey as string])),
-    [data, nameKey],
-  );
-
-  const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
-
-  // Sets selection state and notifies the parent with the sector's value.
-  const selectSector = useCallback(
-    (name: string | null) => {
-      setSelectedSector(name);
-      if (name === null) {
-        onSelectionChange?.(null);
-        return;
-      }
-      const item = data.find((row) => String(row[nameKey as string]) === name);
-      onSelectionChange?.(
-        item ? { dataKey: name, value: Number(item[dataKey as string]) || 0 } : null,
-      );
-    },
-    [data, dataKey, nameKey, onSelectionChange],
-  );
-
-  // Refresh the click handler's snapshot of the latest callbacks/flags every render.
-  live.handlers = {
-    isClickable: pie?.isClickable ?? false,
-    selectedSector,
-    selectSector,
-  };
+  useLayoutEffect(() => {
+    liveRef.current.handlers = {
+      isClickable: pie?.isClickable ?? false,
+      selectedSector,
+      selectSector,
+    };
+  }, [pie?.isClickable, selectedSector, selectSector]);
 
   // ── Option builder ───────────────────────────────────────────────────────────
   // Thin orchestrator over the pure builders above: snapshot the resolved colors
   // into an OptionBuildContext, then assemble.
   const buildOption = useCallback((): EChartsOption => {
-    const resolved = live.resolved;
+    const resolved = liveRef.current.resolved;
     if (!resolved) return {};
 
     const ctx: OptionBuildContext = {
       data,
       config,
-      nameKey: nameKey as string,
-      dataKey: dataKey as string,
+      nameKey,
+      dataKey,
       pie,
       selectedSector,
       tooltipSlot,
@@ -987,7 +953,6 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
       series: buildPieSeries(ctx),
     };
   }, [
-    live,
     data,
     config,
     nameKey,
@@ -1004,6 +969,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     const mount = mountRef.current;
     const container = containerRef.current;
     if (!mount || !container) return;
+    const live = liveRef.current;
 
     const chart = echarts.init(mount, null, { renderer });
     echartsRef.current = chart;
@@ -1052,7 +1018,6 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
       // the throwaway instance and the surviving one renders without it.
       live.hasRevealed = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renderer]);
 
   // ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
@@ -1063,7 +1028,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
 
     // Colors come from the <style> committed just before this effect ran — read
     // them here, right before the push, rather than round-tripping through state.
-    live.resolved = resolveColors(container, config, sectorKeys);
+    liveRef.current.resolved = resolveColors(container, config, sectorKeys);
 
     const push = (withEntrance: boolean) => {
       const option = buildOption();
@@ -1083,20 +1048,19 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     // notMerge would otherwise replay the entrance on each. A loading cycle
     // re-arms it: the Recharts twin remounts its sectors after loading and
     // replays the intro, so data → loading → data draws in again here too.
-    if (isLoading) live.hasRevealed = false;
-    const shouldReveal = !live.hasRevealed && !isLoading;
-    if (shouldReveal) live.hasRevealed = true;
+    if (isLoading) liveRef.current.hasRevealed = false;
+    const shouldReveal = !liveRef.current.hasRevealed && !isLoading;
+    if (shouldReveal) liveRef.current.hasRevealed = true;
     const revealEnabled = animation && shouldReveal && !shouldReduceMotion;
     push(revealEnabled);
 
     // Theme flips re-enter here without touching React: re-read the tokens (the
     // .dark class changed) and push an update-style option.
-    live.repush = () => {
-      live.resolved = resolveColors(container, config, sectorKeys);
+    liveRef.current.repush = () => {
+      liveRef.current.resolved = resolveColors(container, config, sectorKeys);
       push(false);
     };
   }, [
-    live,
     buildOption,
     chartOptions,
     isLoading,
@@ -1135,8 +1099,8 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     const tick = (now: number) => {
       const phase = ((((now - start) / LOADING_ANIMATION_DURATION) % 1) + 1) % 1;
       // Read tokens per frame, so a theme flip mid-loading retints the shimmer.
-      const foreground = live.resolved?.tokens.foreground ?? FALLBACK_COLOR;
-      const background = live.resolved?.tokens.background ?? FALLBACK_COLOR;
+      const foreground = liveRef.current.resolved?.tokens.foreground ?? FALLBACK_COLOR;
+      const background = liveRef.current.resolved?.tokens.background ?? FALLBACK_COLOR;
 
       // Rebuild the full itemStyle for each sector — setOption replaces a series'
       // data array wholesale, so a partial datum would drop the border/rounding.
@@ -1163,7 +1127,93 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [live, isLoading, pie, renderer]);
+  }, [isLoading, pie, renderer]);
+
+  return { containerRef, mountRef };
+}
+
+/**
+ * Apache ECharts port of the EvilCharts pie chart, exposing a compound-as-config
+ * API so its JSX reads identically to the Recharts twin. The root owns the data,
+ * config, selection state, and visual layers; every visual part —
+ * `<Pie>`, `<Tooltip>`, `<Legend>`, `<Background>` — is composed as a declarative
+ * child that renders nothing. The root walks those children by reference and
+ * drives a single imperative ECharts instance through usePieRuntime.
+ */
+export function EChartsPieChart<TData extends Record<string, unknown>>({
+  data,
+  config,
+  dataKey,
+  nameKey,
+  className,
+  renderer = DEFAULT_ECHARTS_RENDERER,
+  animation = true,
+  defaultSelectedSector = null,
+  selectedSector: selectedSectorProp,
+  onSelectionChange,
+  isLoading = false,
+  chartOptions,
+  children,
+}: EChartsPieChartProps<TData>) {
+  const rawId = useId();
+  const chartId = `chart-${rawId.replace(/:/g, "")}`;
+
+  const shouldReduceMotion = useReducedMotion();
+
+  // Selection is controlled when the `selectedSector` prop is provided; otherwise
+  // the internal state (seeded by defaultSelectedSector) drives it.
+  const [internalSelectedSector, setSelectedSector] = useState<string | null>(
+    defaultSelectedSector,
+  );
+  const selectedSector =
+    selectedSectorProp !== undefined ? selectedSectorProp : internalSelectedSector;
+
+  // ── Declarative config, collected from children by reference ─────────────────
+  const collected = useMemo(() => collectConfig(children), [children]);
+  const { pie, tooltip: tooltipSlot, legend: legendSlot, background: backgroundSlot } = collected;
+
+  // Sector names in data order — the keys color resolution, the legend, and the
+  // click handler all agree on. Config is keyed by these same names.
+  const sectorKeys = useMemo(
+    () => data.map((row) => String(row[nameKey as string])),
+    [data, nameKey],
+  );
+
+  const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
+
+  // Sets selection state and notifies the parent with the sector's value.
+  const selectSector = useCallback(
+    (name: string | null) => {
+      setSelectedSector(name);
+      if (name === null) {
+        onSelectionChange?.(null);
+        return;
+      }
+      const item = data.find((row) => String(row[nameKey as string]) === name);
+      onSelectionChange?.(
+        item ? { dataKey: name, value: Number(item[dataKey as string]) || 0 } : null,
+      );
+    },
+    [data, dataKey, nameKey, onSelectionChange],
+  );
+
+  const { containerRef, mountRef } = usePieRuntime({
+    data,
+    config,
+    dataKey,
+    nameKey,
+    pie,
+    tooltipSlot,
+    legendSlot,
+    selectedSector,
+    selectSector,
+    sectorKeys,
+    renderer,
+    animation,
+    shouldReduceMotion,
+    isLoading,
+    chartOptions,
+  });
 
   // ── Legend overlay position ──────────────────────────────────────────────────
   const legendStyle: CSSProperties = {
@@ -1210,15 +1260,17 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
 
       {isLoading && (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
-          >
-            <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
-            <span>Loading</span>
-          </motion.div>
+          <LazyMotion features={domAnimation}>
+            <m.div
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
+            >
+              <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
+              <span>Loading</span>
+            </m.div>
+          </LazyMotion>
         </div>
       )}
     </div>

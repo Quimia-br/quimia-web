@@ -1,16 +1,18 @@
 import { cva } from "class-variance-authority";
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:ring-3 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-1/2 [&_svg:not([class*='size-'])]:max-size-6 cursor-pointer",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent text-lg font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:ring-3 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:size-6 [&_svg]:pointer-events-none [&_svg]:shrink-0 cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "bg-primary-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-pressed disabled:bg-primary-primary/50 disabled:text-foreground-disabled disabled:opacity-100",
+          "bg-primary-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-pressed disabled:bg-primary-primary/60 disabled:text-foreground-disabled disabled:opacity-100",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
-          "bg-secondary-primary text-secondary-foreground hover:bg-secondary-hover active:bg-secondary-secondary disabled:bg-secondary-primary disabled:text-secondary-on-color disabled:opacity-100 aria-expanded:bg-secondary-hover aria-expanded:text-secondary-foreground",
+          "bg-secondary-primary text-secondary-foreground hover:bg-secondary-hover active:bg-secondary-secondary disabled:bg-secondary-primary disabled:text-foreground-disabled disabled:opacity-100 aria-expanded:bg-secondary-hover aria-expanded:text-secondary-foreground",
+        critical:
+          "bg-feedback-error text-foreground-error hover:brightness-95 active:brightness-90 disabled:bg-feedback-error/60 disabled:text-foreground-disabled disabled:opacity-100",
         onColor: "bg-foreground-on-color text-foreground-primary",
         ghost:
           "hover:bg-muted/30 hover:text-foreground aria-expanded:bg-muted/30 aria-expanded:text-foreground dark:hover:bg-muted/50",
@@ -30,7 +32,8 @@ const buttonVariants = cva(
         "icon-tiny":
           "size-10 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-md": "size-16",
-        basic: "h-11 w-full rounded-full px-10 text-base",
+        basic: "h-auto min-h-[61px] w-full gap-2 rounded-full border-0 px-5 py-4 leading-[1.2] [&_svg:not([class*='size-'])]:size-5",
+        "basic-compact": "h-auto min-h-12 w-full gap-1 rounded-full border-0 px-4 py-3 text-base leading-[1.2] [&_svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {

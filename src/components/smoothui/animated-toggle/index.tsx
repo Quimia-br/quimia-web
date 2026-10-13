@@ -59,6 +59,55 @@ const SIZES = {
   },
 } as const;
 
+function ToggleIcon({ reduced, className, children }: { reduced: boolean; className: string; children: ReactNode }) {
+  return <m.span
+    animate={reduced ? { opacity: 1 } : { opacity: 1, rotate: 0, scale: 1 }}
+    className={cn("flex items-center justify-center text-muted-foreground", className)}
+    exit={reduced ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, rotate: -90, scale: 0.5 }}
+    initial={reduced ? { opacity: 0 } : { opacity: 0, rotate: 90, scale: 0.5 }}
+    transition={reduced ? { duration: 0 } : SPRING}
+  >{children}</m.span>;
+}
+
+function ToggleThumb({ checked, size = "md", variant = "default", icons }: Pick<AnimatedToggleProps, "size" | "variant" | "icons"> & { checked: boolean }) {
+  const shouldReduceMotion = useReducedMotion();
+  const sizeConfig = SIZES[size];
+  const translateX = checked ? sizeConfig.thumbTranslate : 0;
+  const borderRadius = variant === "morph" && !shouldReduceMotion && !checked ? 6 : 9999;
+  return (
+      <m.span
+        animate={
+          shouldReduceMotion
+            ? { x: translateX }
+            : { borderRadius, x: translateX }
+        }
+        // Modificado: Adicionado bg- dinâmico com base no estado 'checked' (Cinza escuro vs Verde/Brand)
+        // Removido 'shadow-sm' e 'border' para seguir o design flat da imagem
+        className={cn(
+          "pointer-events-none flex items-center justify-center rounded-full transition-colors duration-200",
+          checked ? "bg-brand-primary" : "bg-secondary-on-color",
+          sizeConfig.thumb
+        )}
+        initial={false}
+        style={{ borderRadius }}
+        transition={shouldReduceMotion ? { duration: 0 } : SPRING}
+      >
+        <AnimatePresence initial={false} mode="wait">
+          {variant === "icon" && icons && (
+            <ToggleIcon
+              key={checked ? "on" : "off"}
+              reduced={!!shouldReduceMotion}
+              className={sizeConfig.icon}
+            >
+              {checked ? icons.on : icons.off}
+            </ToggleIcon>
+          )}
+        </AnimatePresence>
+      </m.span>
+
+  );
+}
+
 const AnimatedToggle = ({
   checked: controlledChecked,
   defaultChecked = false,
@@ -70,7 +119,6 @@ const AnimatedToggle = ({
   label,
   className,
 }: AnimatedToggleProps) => {
-  const shouldReduceMotion = useReducedMotion();
   const [internalChecked, setInternalChecked] = useState(defaultChecked);
 
   const isControlled = controlledChecked !== undefined;
@@ -97,8 +145,6 @@ const AnimatedToggle = ({
   );
 
   const sizeConfig = SIZES[size];
-  const translateX = checked ? sizeConfig.thumbTranslate : 0;
-  const borderRadius = variant === "morph" && !shouldReduceMotion && !checked ? 6 : 9999;
 
   return (
     <LazyMotion features={domAnimation}>
@@ -119,53 +165,7 @@ const AnimatedToggle = ({
         role="switch"
         type="button"
       >
-      <m.span
-        animate={
-          shouldReduceMotion
-            ? { x: translateX }
-            : { borderRadius, x: translateX }
-        }
-        // Modificado: Adicionado bg- dinâmico com base no estado 'checked' (Cinza escuro vs Verde/Brand)
-        // Removido 'shadow-sm' e 'border' para seguir o design flat da imagem
-        className={cn(
-          "pointer-events-none flex items-center justify-center rounded-full transition-colors duration-200",
-          checked ? "bg-brand-primary" : "bg-secondary-on-color",
-          sizeConfig.thumb
-        )}
-        initial={false}
-        style={{ borderRadius }}
-        transition={shouldReduceMotion ? { duration: 0 } : SPRING}
-      >
-        {variant === "icon" && icons && (
-          <AnimatePresence initial={false} mode="wait">
-            <m.span
-              key={checked ? "on" : "off"}
-              animate={
-                shouldReduceMotion
-                  ? { opacity: 1 }
-                  : { opacity: 1, rotate: 0, scale: 1 }
-              }
-              className={cn(
-                "flex items-center justify-center text-muted-foreground",
-                sizeConfig.icon
-              )}
-              exit={
-                shouldReduceMotion
-                  ? { opacity: 0, transition: { duration: 0 } }
-                  : { opacity: 0, rotate: -90, scale: 0.5 }
-              }
-              initial={
-                shouldReduceMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, rotate: 90, scale: 0.5 }
-              }
-              transition={shouldReduceMotion ? { duration: 0 } : SPRING}
-            >
-              {checked ? icons.on : icons.off}
-            </m.span>
-          </AnimatePresence>
-        )}
-      </m.span>
+        <ToggleThumb checked={checked} size={size} variant={variant} icons={icons} />
       </button>
     </LazyMotion>
   );

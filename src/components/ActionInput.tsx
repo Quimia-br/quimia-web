@@ -127,7 +127,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
         setUncontrolledValue("");
       }
 
-      if (isControlled && onChange) {
+      if (onChange) {
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,
           "value"

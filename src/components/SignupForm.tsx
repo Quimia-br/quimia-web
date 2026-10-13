@@ -16,6 +16,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const STORAGE_KEY = "quimia:signup-draft";
+const registrationErrors: Record<string, { field: "email" | "cnpj" | "senha"; message: string }> = {
+  email_in_use: { field: "email", message: "Este e-mail já está em uso." },
+  cnpj_in_use: { field: "cnpj", message: "Este CNPJ já está cadastrado." },
+  invalid_cnpj: { field: "cnpj", message: "O CNPJ informado é inválido." },
+  weak_password: { field: "senha", message: "Use uma senha com pelo menos 8 caracteres, uma letra e um número." },
+  password_too_long: { field: "senha", message: "A senha deve ter no máximo 72 bytes." },
+};
 
 const formSchema = z.object({
   nome: z.string().nonempty("Informe o nome da empresa"),
@@ -52,38 +59,19 @@ function SignupForm() {
 
         clearFormDraft(STORAGE_KEY);
 
-        navigate("/login");
+        navigate("/login", { replace: true });
       } catch (error) {
         if (axios.isAxiosError(error)) {
           const apiError = error.response?.data as
-            | { message?: string }
+            | { detail?: string }
             | undefined;
-          const errorBody = apiError?.message || "";
-
-          if (errorBody === "email_in_use") {
-            form.setFieldMeta("email", (prev) => ({
+          const fieldError = registrationErrors[apiError?.detail ?? ""];
+          if (fieldError) {
+            form.setFieldMeta(fieldError.field, (prev) => ({
               ...prev,
               errorMap: {
                 ...prev.errorMap,
-                onDynamic: "Este e-mail já está em uso.",
-              },
-            }));
-          }
-          if (errorBody === "cnpj_in_use") {
-            form.setFieldMeta("cnpj", (prev) => ({
-              ...prev,
-              errorMap: {
-                ...prev.errorMap,
-                onDynamic: "Este CNPJ já está cadastrado.",
-              },
-            }));
-          }
-          if (errorBody === "invalid_cnpj") {
-            form.setFieldMeta("cnpj", (prev) => ({
-              ...prev,
-              errorMap: {
-                ...prev.errorMap,
-                onDynamic: "O CNPJ informado é inválido.",
+                onSubmit: fieldError.message,
               },
             }));
           }
@@ -92,14 +80,11 @@ function SignupForm() {
     },
   });
   const errors = useSelector(form.store, (state) => {
-    const rawErrors = state.errorMap.onDynamic;
-    if (!rawErrors) return undefined;
-
     return Object.fromEntries(
-      Object.entries(rawErrors).map(([field, issues]) => [
-        field,
-        issues?.[0]?.message || "",
-      ]),
+      Object.entries(state.fieldMeta).map(([field, meta]) => {
+        const issue = meta.errors[0];
+        return [field, typeof issue === "string" ? issue : issue?.message ?? ""];
+      }),
     );
   });
 
@@ -123,33 +108,35 @@ function SignupForm() {
 
   return (
     <Form className="w-full gap-4" errors={errors} onFormSubmit={handleSubmit}>
-      <form.Field name="nome">
-        {(field) => (
-          <FormTextField
-            name={field.name}
-            label="Nome"
-            placeholder="Quimia"
-            value={field.state.value}
-            onChange={(e) => field.handleChange(e.target.value)}
-            onBlur={field.handleBlur}
-          />
-        )}
-      </form.Field>
+      <div className="flex flex-col items-start w-full gap-4 md:flex-row *:flex1">
+        <form.Field name="cnpj">
+          {(field) => (
+            <FormTextField
+              name={field.name}
+              label="CNPJ"
+              placeholder="00.000.000/0000-00"
+              value={field.state.value}
+              onChange={(e) => {
+                field.handleChange(formatCNPJ(e.target.value));
+              }}
+              onBlur={field.handleBlur}
+            />
+          )}
+        </form.Field>
 
-      <form.Field name="cnpj">
-        {(field) => (
-          <FormTextField
-            name={field.name}
-            label="CNPJ"
-            placeholder="00.000.000/0000-00"
-            value={field.state.value}
-            onChange={(e) => {
-              field.handleChange(formatCNPJ(e.target.value));
-            }}
-            onBlur={field.handleBlur}
-          />
-        )}
-      </form.Field>
+        <form.Field name="nome">
+          {(field) => (
+            <FormTextField
+              name={field.name}
+              label="Nome"
+              placeholder="Quimia"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+          )}
+        </form.Field>
+      </div>
 
       <form.Field name="email">
         {(field) => (
@@ -172,7 +159,7 @@ function SignupForm() {
             name={field.name}
             label="Senha"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             placeholder="Quimia123@"
             value={field.state.value}
             onChange={(e) => field.handleChange(e.target.value)}
@@ -182,20 +169,26 @@ function SignupForm() {
       </form.Field>
 
       <div className="flex flex-col gap-2">
+        {register.isError && !Object.values(errors).some(Boolean) && (
+          <p className="text-sm text-center text-destructive" role="alert">
+            Não foi possível cadastrar. Tente novamente.
+          </p>
+        )}
         <form.Subscribe
-          selector={(state) =>
-            Object.values(state.values).every(
+          selector={(state) => ({
+            hasAllValues: Object.values(state.values).every(
               (value) => value.trim().length > 0,
-            )
-          }
+            ),
+            isSubmitting: state.isSubmitting,
+          })}
         >
-          {(hasAllValues) => (
-            <BasicButton disabled={!hasAllValues} type="submit">
-              Cadastrar
+          {({ hasAllValues, isSubmitting }) => (
+            <BasicButton disabled={!hasAllValues || isSubmitting} type="submit">
+              {isSubmitting ? "Cadastrando..." : "Cadastrar"}
             </BasicButton>
           )}
         </form.Subscribe>
-        <p className="text-base text-center text-foreground-subtle">
+        <p className="text-base text-center text-muted-foreground">
           Já tem conta no Quimia?{" "}
           <LinkButton to="/login">Entre aqui</LinkButton>
         </p>

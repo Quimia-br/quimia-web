@@ -1,5 +1,6 @@
 import { ThemeProviderContext, type Theme } from "@/hooks/use-theme";
-import { useEffect, useState } from "react";
+import { usePersistedPreference } from "@/hooks/use-persisted-preference";
+import { useEffect, useSyncExternalStore } from "react";
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -7,44 +8,43 @@ type ThemeProviderProps = {
   storageKey?: string
 }
 
+const isTheme = (value: string): value is Theme =>
+  value === "light" || value === "dark" || value === "system";
+
+const systemThemeQuery = "(prefers-color-scheme: dark)";
+
+const prefersDark = () =>
+  typeof window.matchMedia === "function" &&
+  window.matchMedia(systemThemeQuery).matches;
+
+const subscribeToSystemTheme = (onChange: () => void) => {
+  if (typeof window.matchMedia !== "function") return () => {};
+  const media = window.matchMedia(systemThemeQuery);
+  media.addEventListener?.("change", onChange);
+  return () => media.removeEventListener?.("change", onChange);
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "quimia:theme",
-  ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
+  const [theme, setTheme] = usePersistedPreference(storageKey, defaultTheme, isTheme);
+  const systemDark = useSyncExternalStore(subscribeToSystemTheme, prefersDark, () => false);
+  const resolvedTheme = theme === "system" ? (systemDark ? "dark" : "light") : theme;
 
   useEffect(() => {
     const root = window.document.documentElement
 
     root.classList.remove("light", "dark")
 
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
+    root.classList.add(resolvedTheme)
+  }, [resolvedTheme])
 
-      root.classList.add(systemTheme)
-      return
-    }
-
-    root.classList.add(theme)
-  }, [theme])
-
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setTheme(theme)
-    },
-  }
+  const value = { theme, resolvedTheme, setTheme }
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   )

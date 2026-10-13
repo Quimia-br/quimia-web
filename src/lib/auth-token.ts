@@ -1,16 +1,6 @@
+import type { AuthState } from "@/types/AuthState";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { EmpresaSummary } from "@/types/Empresa";
-
-interface AuthState {
-  accessToken: string | null;
-  user: EmpresaSummary | null;
-  isAuthenticated: boolean;
-  actions: {
-    login: (token: string, user: EmpresaSummary) => void;
-    logout: () => void;
-  };
-}
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -23,13 +13,14 @@ export const useAuthStore = create<AuthState>()(
           set({ accessToken: token, user, isAuthenticated: true }),
         logout: () =>
           set({ accessToken: null, user: null, isAuthenticated: false }),
+        setAccessToken: (token) =>
+          set({ accessToken: token }),
       },
     }),
     {
       name: "quimia:auth-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        accessToken: state.accessToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),

@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginForm from "./LoginForm";
 import { login } from "@/services/auth";
+import { authKeys } from "@/hooks/use-user";
 
 vi.mock("@/services/auth", () => ({
   login: vi.fn(),
@@ -17,16 +18,24 @@ function renderLoginForm(
     defaultOptions: { mutations: { retry: false } },
   });
 
-  return render(
+  function ProtectedPage() {
+    const location = useLocation();
+    return <><p>Protected page</p><output aria-label="Destination">{location.pathname}{location.search}{location.hash}</output></>;
+  }
+
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={initialEntry}>
         <Routes>
           <Route path="/login" element={<LoginForm />} />
-          <Route path="/protected" element={<p>Protected page</p>} />
+          <Route path="/protected" element={<ProtectedPage />} />
+          <Route path="/" element={<p>Home page</p>} />
+          <Route path="/signup" element={<p>Signup page</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...result, queryClient };
 }
 
 describe("LoginForm", () => {
@@ -60,6 +69,7 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(screen.getByText("Informe um e-mail valido")).toBeInTheDocument();
+    expect(login).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Entrar" }));
     expect(screen.getByText("Informe um e-mail valido")).toBeInTheDocument();
@@ -78,13 +88,13 @@ describe("LoginForm", () => {
 
   it("sends senha and returns to the protected destination", async () => {
     vi.mocked(login).mockResolvedValue({
-      id: "8e56ef8a-b307-46d6-a643-df122287a77b",
+      id: 1,
       nome: "Usuário de Teste",
       email: "qa@example.com",
     });
     const user = userEvent.setup();
 
-    renderLoginForm([
+    const { queryClient } = renderLoginForm([
       {
         pathname: "/login",
         state: {
@@ -108,6 +118,8 @@ describe("LoginForm", () => {
       }, expect.anything());
     });
     expect(await screen.findByText("Protected page")).toBeInTheDocument();
+    expect(screen.getByLabelText("Destination")).toHaveTextContent("/protected?tab=profile#details");
+    expect(queryClient.getQueryData(authKeys.user())).toEqual({ id: 1, nome: "Usuário de Teste", email: "qa@example.com" });
   });
 
   it("shows an error and stays on login when authentication fails", async () => {
@@ -125,5 +137,41 @@ describe("LoginForm", () => {
     );
     expect(error).toHaveAttribute("role", "alert");
     expect(screen.queryByText("Protected page")).not.toBeInTheDocument();
+  });
+
+  it("restores and saves only the email draft", async () => {
+    localStorage.setItem("quimia:login-draft", JSON.stringify({ email: "saved@example.com" }));
+    const user = userEvent.setup();
+    renderLoginForm();
+    expect(screen.getByLabelText("E-mail")).toHaveValue("saved@example.com");
+    expect(screen.getByLabelText("Senha")).toHaveValue("");
+    await user.clear(screen.getByLabelText("E-mail"));
+    await user.type(screen.getByLabelText("E-mail"), "new@example.com");
+    await user.type(screen.getByLabelText("Senha"), "private-password");
+    expect(JSON.parse(localStorage.getItem("quimia:login-draft")!)).toEqual({ email: "new@example.com" });
+  });
+
+  it("blocks duplicate submission while login is pending and goes home without a destination", async () => {
+    let resolveLogin!: (value: Awaited<ReturnType<typeof login>>) => void;
+    vi.mocked(login).mockImplementation(() => new Promise((resolve) => { resolveLogin = resolve; }));
+    const user = userEvent.setup();
+    renderLoginForm();
+    await user.type(screen.getByLabelText("E-mail"), "qa@example.com");
+    await user.type(screen.getByLabelText("Senha"), "password123");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    const pendingButton = await screen.findByRole("button", { name: "Entrando..." });
+    expect(pendingButton).toBeDisabled();
+    await user.click(pendingButton);
+    expect(login).toHaveBeenCalledOnce();
+    await act(async () => resolveLogin({ id: 1, nome: "QA", email: "qa@example.com" }));
+    expect(await screen.findByText("Home page")).toBeInTheDocument();
+  });
+
+  it("opens signup using the registration link", async () => {
+    const user = userEvent.setup();
+    renderLoginForm();
+    await user.click(screen.getByRole("link", { name: "Crie já" }));
+    expect(await screen.findByText("Signup page")).toBeInTheDocument();
+    expect(login).not.toHaveBeenCalled();
   });
 });

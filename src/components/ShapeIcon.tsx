@@ -4,6 +4,8 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "cn";
 import { SidebarMenuItem } from "@/components/ui/sidebar";
+import { Label } from "./ui/label";
+import { useId } from "react";
 
 type ShapeIconProps = Omit<React.ComponentProps<typeof NavLink>, "children"> & {
   icon: LucideIcon;
@@ -18,36 +20,32 @@ function ShapeIcon({
   end,
   ...props
 }: ShapeIconProps) {
-  const shouldEnd = end ?? (to === "/");
+  const shouldEnd = end ?? to === "/";
+  const id = useId();
 
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className="flex flex-col justify-center items-center">
       <NavLink
         to={to}
         end={shouldEnd}
+        aria-labelledby={id}
         data-slot="sidebar-nav-item"
-        className={cn(
-          "group flex flex-col items-center gap-2 rounded-full outline-none",
-          "focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-          typeof className === "string" && className,
+        className={(state) => cn(
+          "flex justify-center items-center rounded-full outline-none",
+          "focus-visible:ring-3 focus-visible:ring-sidebar-ring",
+          "relative grid size-18 rounded-full transition-colors",
+          "bg-secondary hover:bg-secondary-hover",
+          "aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground",
+          "[&_svg:not([class*='size-'])]:size-8",
+          typeof className === "function" ? className(state) : className,
         )}
         {...props}
       >
-        <span
-          className={cn(
-            "relative grid size-18 place-items-center rounded-full transition-colors",
-            "bg-secondary group-hover:bg-secondary-hover",
-            "group-aria-[current=page]:bg-primary group-aria-[current=page]:text-primary-foreground",
-            "[&_svg:not([class*='size-'])]:size-8",
-          )}
-        >
-          <Icon aria-hidden />
-        </span>
-
-        <span className="font-medium text-base text-sidebar-foreground transition-colors group-aria-[current=page]:text-sidebar-foreground">
-          {label}
-        </span>
+        <Icon aria-hidden />
       </NavLink>
+      <Label id={id} className="font-medium text-base text-sidebar-foreground">
+        {label}
+      </Label>
     </SidebarMenuItem>
   );
 }

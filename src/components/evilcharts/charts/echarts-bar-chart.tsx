@@ -20,15 +20,14 @@ import {
   type TooltipRoundness,
   type TooltipVariant,
 } from "@/components/evilcharts/ui/echarts-tooltip";
+import { Brush, type BrushProps } from "@/components/evilcharts/ui/echarts-brush";
 import {
-  Brush,
   buildBrushDataZoom,
   syncBrushOverlay,
   type BrushGeometry,
   type BrushOverlayElements,
-  type BrushProps,
   type BrushRange,
-} from "@/components/evilcharts/ui/echarts-brush";
+} from "@/components/evilcharts/ui/echarts-brush-utils";
 import {
   DataZoomComponent,
   GridComponent,
@@ -49,12 +48,14 @@ import {
   type CSSProperties,
   type FC,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { LegendOverlay, type LegendVariant } from "@/components/evilcharts/ui/echarts-legend";
 import type { ComposeOption, ImagePatternObject } from "echarts/core";
 import { BarChart, type BarSeriesOption } from "echarts/charts";
 import { sampleGradient } from "@/components/evilcharts/ui/echarts-dot";
-import { motion, useReducedMotion } from "motion/react";
+import { LazyMotion, domAnimation, useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import * as echarts from "echarts/core";
 
 // Re-export the shared types that were previously declared inline here, so
@@ -1393,6 +1394,7 @@ type LiveState = {
   // Latest callbacks/flags for the imperative ECharts event handlers.
   handlers: {
     onBrushChange?: (range: { startIndex: number; endIndex: number }) => void;
+    toggleSelection: (key: string) => void;
     clickableKeys: Set<string>;
     brushFormatLabel?: (value: string, index: number) => string;
     seriesKeys: string[];
@@ -1411,6 +1413,76 @@ type LiveState = {
   // dataZoom drag anchor and the running entrance untouched. Set by the sync effect.
   patchStrippedCaps: () => void;
 };
+
+function createLiveState(): LiveState {
+  return {
+    resolved: null,
+    hasRevealed: false,
+    revealEndsAt: 0,
+    valuePxPerUnit: null,
+    barWidthPx: null,
+    expand: { key: null, hovered: null, progress: new Map<number, number>() },
+    expandRaf: 0,
+    animateExpand: () => {},
+    loadingRows: null,
+    categories: [],
+    dataLength: 0,
+    brushRange: { start: 0, end: 100 },
+    brushGeom: null,
+    brushOverlay: null,
+    brushHover: { inside: false, left: false, right: false },
+    handlers: {
+      onBrushChange: undefined,
+      toggleSelection: () => {},
+      clickableKeys: new Set<string>(),
+      brushFormatLabel: undefined,
+      seriesKeys: [],
+      hasStripped: false,
+      hasBlocks: false,
+      hasStackGap: false,
+      expandableKey: null,
+      isHorizontal: false,
+    },
+    repush: () => {},
+    patchStrippedCaps: () => {},
+  };
+}
+
+function ensureLoadingData(live: LiveState, bars: number): number[] {
+  if (live.loadingRows === null) live.loadingRows = getLoadingBarData(bars);
+  return live.loadingRows;
+}
+
+function findCategoryKey(
+  axisKey: string | undefined,
+  rootKey: string | undefined,
+  firstRow: Record<string, unknown> | undefined,
+  seriesKeys: string[],
+): string {
+  if (axisKey) return axisKey;
+  if (rootKey) return rootKey;
+  if (!firstRow) return "";
+  const claimed = new Set(seriesKeys);
+  return Object.keys(firstRow).find((key) => !claimed.has(key)) ?? "";
+}
+
+function findMaxHighlightIndex(
+  data: Record<string, unknown>[],
+  seriesKeys: string[],
+  enabled: boolean,
+): number | null {
+  if (!enabled || !data.length || !seriesKeys.length) return null;
+  let best = 0;
+  let bestTotal = -Infinity;
+  data.forEach((row, index) => {
+    const total = seriesKeys.reduce((sum, key) => sum + (Number(row[key]) || 0), 0);
+    if (total > bestTotal) {
+      bestTotal = total;
+      best = index;
+    }
+  });
+  return best;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -1458,43 +1530,11 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   // than in state: as state it forced an extra render pass and an effect whose
   // only job was to trigger the option push. The object identity is stable for
   // the component's lifetime.
-  const live = useRef<LiveState>({
-    resolved: null,
-    hasRevealed: false,
-    revealEndsAt: 0,
-    valuePxPerUnit: null,
-    barWidthPx: null,
-    expand: { key: null, hovered: null, progress: new Map<number, number>() },
-    expandRaf: 0,
-    animateExpand: () => {},
-    loadingRows: null,
-    categories: [],
-    dataLength: 0,
-    brushRange: { start: 0, end: 100 },
-    brushGeom: null,
-    brushOverlay: null,
-    brushHover: { inside: false, left: false, right: false },
-    handlers: {
-      onBrushChange: undefined, // set per-render from the <Brush> child's onChange
-      clickableKeys: new Set<string>(),
-      brushFormatLabel: undefined, // set per-render from the <Brush> child's formatLabel
-      seriesKeys: [],
-      hasStripped: false,
-      hasBlocks: false,
-      hasStackGap: false,
-      expandableKey: null,
-      isHorizontal: false,
-    },
-    repush: () => {},
-    patchStrippedCaps: () => {},
-  }).current;
-
-  // Skeleton rows roll lazily on first use — an impure useRef initializer would
-  // re-roll Math.random() on every render.
-  const loadingData = useCallback(
-    () => (live.loadingRows ??= getLoadingBarData(loadingBars)),
-    [live, loadingBars],
-  );
+  const liveRef = useRef<LiveState | null>(null);
+  const getLive = useCallback((): LiveState => {
+    if (liveRef.current === null) liveRef.current = createLiveState();
+    return liveRef.current;
+  }, []);
   const shouldReduceMotion = useReducedMotion();
 
   const [selectedDataKey, setSelectedDataKey] = useState<string | null>(defaultSelectedDataKey);
@@ -1526,36 +1566,20 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   const seriesKeys = useMemo(() => bars.map((bar) => bar.dataKey), [bars]);
 
   // category key: category axis dataKey → root xDataKey → first data column no <Bar> claims.
-  const categoryKey = useMemo(() => {
-    if (categorySlot.dataKey) return categorySlot.dataKey;
-    if (xDataKey) return xDataKey as string;
-    const firstRow = data[0];
-    if (firstRow) {
-      const claimed = new Set(seriesKeys);
-      const found = Object.keys(firstRow).find((key) => !claimed.has(key));
-      if (found) return found;
-    }
-    return "";
-  }, [categorySlot.dataKey, xDataKey, data, seriesKeys]);
+  const categoryKey = useMemo(
+    () => findCategoryKey(categorySlot.dataKey, xDataKey, data[0], seriesKeys),
+    [categorySlot.dataKey, xDataKey, data, seriesKeys],
+  );
 
   // The intro grow-in follows the first bar's setting, falling back to the root default.
   const effectiveAnimation = bars[0]?.animationType ?? animationType;
 
   // The tallest COLUMN, comparing totals across every series so a stack or group
   // wins together rather than one bar inside it. Null when the flag is off.
-  const maxHighlightIndex = useMemo(() => {
-    if (!enableMaxValueHighlight || !data.length || !seriesKeys.length) return null;
-    let best = 0;
-    let bestTotal = -Infinity;
-    data.forEach((row, i) => {
-      const total = seriesKeys.reduce((sum, key) => sum + (Number(row[key]) || 0), 0);
-      if (total > bestTotal) {
-        bestTotal = total;
-        best = i;
-      }
-    });
-    return best;
-  }, [enableMaxValueHighlight, data, seriesKeys]);
+  const maxHighlightIndex = useMemo(
+    () => findMaxHighlightIndex(data, seriesKeys, enableMaxValueHighlight),
+    [enableMaxValueHighlight, data, seriesKeys],
+  );
 
   const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
 
@@ -1572,30 +1596,32 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   const hasStrippedBars = !isLoading && bars.some((bar) => bar.variant === "stripped");
 
   // Refresh the handlers' snapshot of the latest callbacks/flags every render.
-  live.handlers = {
-    onBrushChange: brushSlot.onChange,
-    clickableKeys,
-    brushFormatLabel: brushSlot.formatLabel,
-    seriesKeys,
-    hasStripped: hasStrippedBars,
-    hasBlocks: bars.some((bar) => bar.variant === "blocks"),
-    hasStackGap: (stackType === "stacked" || stackType === "percent") && bars.length > 1,
-    expandableKey: bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
-    barCategoryGap,
-    isHorizontal,
-  };
-  live.dataLength = data.length;
-
   const toggleSelection = useCallback(
     (key: string) => {
-      setSelectedDataKey((prev) => {
-        const next = prev === key ? null : key;
-        onSelectionChange?.(next);
-        return next;
-      });
+      const next = selectedDataKey === key ? null : key;
+      setSelectedDataKey(next);
+      onSelectionChange?.(next);
     },
-    [onSelectionChange],
+    [selectedDataKey, onSelectionChange],
   );
+
+  useEffect(() => {
+    const live = getLive();
+    live.handlers = {
+      onBrushChange: brushSlot.onChange,
+      toggleSelection,
+      clickableKeys,
+      brushFormatLabel: brushSlot.formatLabel,
+      seriesKeys,
+      hasStripped: hasStrippedBars,
+      hasBlocks: bars.some((bar) => bar.variant === "blocks"),
+      hasStackGap: (stackType === "stacked" || stackType === "percent") && bars.length > 1,
+      expandableKey: bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
+      barCategoryGap,
+      isHorizontal,
+    };
+    live.dataLength = data.length;
+  }, [getLive, brushSlot, toggleSelection, clickableKeys, seriesKeys, hasStrippedBars, bars, stackType, barCategoryGap, isHorizontal, data.length]);
 
   // The brush is meaningful only when the category axis is on x (vertical layout).
   const brushEnabled = showBrush && !isHorizontal;
@@ -1603,6 +1629,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   // Reposition the brush overlays from the live refs — safe to call from drag
   // events, hover tracking, and pushes alike, since it never touches setOption.
   const syncBrushOverlayNow = useCallback(() => {
+    const live = getLive();
     const chart = echartsRef.current;
     if (!chart) return;
 
@@ -1636,10 +1663,11 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       showLabels: live.brushHover.inside,
       hover: live.brushHover,
     });
-  }, [live]);
+  }, [getLive]);
 
   // ── Option builder ─────────────────────────────────────────────────────────
   const buildOption = useCallback((): EChartsOption => {
+    const live = getLive();
     const resolved = live.resolved;
     if (!resolved) return {};
 
@@ -1664,7 +1692,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       tooltipSlot,
       legendSlot,
       isLoading,
-      loadingData,
+      loadingData: () => ensureLoadingData(live, loadingBars),
       showBrush: brushEnabled,
       brushHeight,
       barGap,
@@ -1697,7 +1725,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       series: [...buildBarSeries(ctx), ...(brush?.miniSeries ?? [])],
     };
   }, [
-    live,
+    getLive,
     data,
     config,
     bars,
@@ -1716,7 +1744,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     tooltipSlot,
     legendSlot,
     isLoading,
-    loadingData,
+    loadingBars,
     brushEnabled,
     brushHeight,
     barGap,
@@ -1724,8 +1752,131 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     maxHighlightIndex,
   ]);
 
+  useBarChartInstance({
+    renderer, mountRef, containerRef, echartsRef, getLive, syncBrushOverlayNow,
+  });
+
+  useBarChartSync({
+    renderer, echartsRef, containerRef, getLive, buildOption, chartOptions,
+    isLoading, animation, effectiveAnimation, shouldReduceMotion, config,
+    seriesKeys, dataLength: data.length, bars, isHorizontal, barCategoryGap,
+    syncBrushOverlayNow,
+  });
+
+  useBarChartDefaultTooltip({
+    renderer, echartsRef, tooltipSlot, isLoading,
+    dataLength: data.length, seriesKeysLength: seriesKeys.length,
+  });
+
+  useBarChartShimmer({ renderer, echartsRef, getLive, isLoading, loadingBars });
+
+  return (
+    <div
+      ref={containerRef}
+      data-chart={chartId}
+      className={`relative flex flex-col text-xs ${className ?? ""}`}
+    >
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+
+      <div className="relative min-h-0 w-full flex-1">
+        <div ref={mountRef} className="h-full min-h-0 w-full" />
+      </div>
+
+      <BarChartOverlays
+        legendSlot={legendSlot}
+        seriesKeys={seriesKeys}
+        config={config}
+        selectedDataKey={selectedDataKey}
+        onToggle={toggleSelection}
+        isLoading={isLoading}
+        shouldReduceMotion={shouldReduceMotion}
+        brushEnabled={brushEnabled}
+        brushHeight={brushHeight}
+      />
+    </div>
+  );
+}
+
+type BarChartOverlaysProps = {
+  legendSlot: LegendSlot;
+  seriesKeys: string[];
+  config: ChartConfig;
+  selectedDataKey: string | null;
+  onToggle: (key: string) => void;
+  isLoading: boolean;
+  shouldReduceMotion: boolean | null;
+  brushEnabled: boolean;
+  brushHeight: number;
+};
+
+function BarChartOverlays({
+  legendSlot, seriesKeys, config, selectedDataKey, onToggle,
+  isLoading, shouldReduceMotion, brushEnabled, brushHeight,
+}: BarChartOverlaysProps) {
+  // Insets match the Recharts legend's breathing room inside the plot frame.
+  const legendStyle: CSSProperties = {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    pointerEvents: "auto",
+    ...(legendSlot.verticalAlign === "top"
+      ? { top: 12 }
+      : legendSlot.verticalAlign === "bottom"
+        ? { bottom: brushEnabled ? brushHeight + 16 : 12 }
+        : { top: "50%", transform: "translateY(-50%)" }),
+  };
+
+  return (
+    <>
+      {legendSlot.present && !isLoading && (
+        <LegendOverlay
+          seriesKeys={seriesKeys}
+          config={config}
+          variant={legendSlot.variant}
+          align={legendSlot.align}
+          verticalAlign={legendSlot.verticalAlign}
+          selectedKey={selectedDataKey}
+          hoveredKey={null}
+          isClickable={legendSlot.isClickable}
+          onToggle={onToggle}
+          style={legendStyle}
+        />
+      )}
+
+      {isLoading && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <LazyMotion features={domAnimation}>
+            <m.div
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
+            >
+              <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
+              <span>Loading</span>
+            </m.div>
+          </LazyMotion>
+        </div>
+      )}
+    </>
+  );
+}
+
+type BarChartInstanceParams = {
+  renderer: EChartsRenderer;
+  mountRef: RefObject<HTMLDivElement | null>;
+  containerRef: RefObject<HTMLDivElement | null>;
+  echartsRef: RefObject<EChartsInstance | null>;
+  getLive: () => LiveState;
+  syncBrushOverlayNow: () => void;
+};
+
+function useBarChartInstance({
+  renderer, mountRef, containerRef, echartsRef, getLive, syncBrushOverlayNow,
+}: BarChartInstanceParams) {
   // ── Init + resize + theme observer (per renderer instance) ──────────────────
   useEffect(() => {
+    const live = getLive();
     const mount = mountRef.current;
     const container = containerRef.current;
     if (!mount || !container) return;
@@ -1762,7 +1913,8 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     // matching what the tooltip already does. Registered ONCE here rather than in
     // the sync effect, which re-runs on every prop/theme change and would stack
     // duplicate listeners; it calls through live.animateExpand, always the current one.
-    chart.getZr().on("mousemove", (event: { offsetX: number; offsetY: number }) => {
+    const zr = chart.getZr();
+    const onExpandMove = (event: { offsetX: number; offsetY: number }) => {
       const { expandableKey } = live.handlers;
       if (!expandableKey) return;
       const point = [event.offsetX, event.offsetY];
@@ -1775,23 +1927,25 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       const converted = chart.convertFromPixel({ gridIndex: 0 }, point);
       const index = Array.isArray(converted) ? converted[0] : converted;
       live.animateExpand(expandableKey, typeof index === "number" ? Math.round(index) : null);
-    });
-    chart.getZr().on("globalout", () => {
+    };
+    const onExpandOut = () => {
       const { expandableKey } = live.handlers;
       if (expandableKey) live.animateExpand(expandableKey, null);
-    });
+    };
+    zr.on("mousemove", onExpandMove);
+    zr.on("globalout", onExpandOut);
 
-    chart.on("click", (params) => {
+    const onChartClick = (params: { seriesId?: string; seriesIndex?: number }) => {
       const { clickableKeys: clickable, seriesKeys: keys } = live.handlers;
-      const p = params as { seriesId?: string; seriesIndex?: number };
       // Bar clicks carry seriesId; keep the seriesIndex fallback for safety. Main
       // series come first in the series array, so the index maps directly.
       const id =
-        p.seriesId ?? (typeof p.seriesIndex === "number" ? keys[p.seriesIndex] : undefined);
-      if (typeof id === "string" && clickable.has(id)) toggleSelection(id);
-    });
+        params.seriesId ?? (typeof params.seriesIndex === "number" ? keys[params.seriesIndex] : undefined);
+      if (typeof id === "string" && clickable.has(id)) live.handlers.toggleSelection(id);
+    };
+    chart.on("click", onChartClick);
 
-    chart.on("datazoom", () => {
+    const onDataZoom = () => {
       const option = chart.getOption() as { dataZoom?: { start?: number; end?: number }[] };
       const zoom = option.dataZoom?.[0];
       if (!zoom) return;
@@ -1806,7 +1960,8 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       const startIndex = Math.round(((zoom.start ?? 0) / 100) * (len - 1));
       const endIndex = Math.round(((zoom.end ?? 100) / 100) * (len - 1));
       onChange({ startIndex, endIndex });
-    });
+    };
+    chart.on("datazoom", onDataZoom);
 
     // Every push measures the axis scale and corrects stripped caps before it
     // paints, so this only catches rescales that BYPASS push — a dataZoom drag
@@ -1814,7 +1969,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     // SILENT series-only merge (patchStrippedCaps), so it can't reset a dataZoom
     // drag. Held off until the entrance finishes (revealEndsAt) so it never lands
     // mid-grow; guarded by an epsilon so a stable measurement doesn't loop.
-    chart.on("finished", () => {
+    const onFinished = () => {
       const { hasStripped, isHorizontal: horiz } = live.handlers;
       if (!hasStripped || performance.now() < live.revealEndsAt) return;
       const measured = measureValuePxPerUnit(chart, horiz);
@@ -1822,11 +1977,11 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       if (live.valuePxPerUnit != null && Math.abs(measured - live.valuePxPerUnit) < 0.5) return;
       live.valuePxPerUnit = measured;
       live.patchStrippedCaps();
-    });
+    };
+    chart.on("finished", onFinished);
 
     // Hover tracking for the overlay: labels show while the pointer is over the
     // brush, and each pill brightens when the pointer is near its edge.
-    const zr = chart.getZr();
     const applyHover = (next: { inside: boolean; left: boolean; right: boolean }) => {
       const prev = live.brushHover;
       if (prev.inside === next.inside && prev.left === next.left && prev.right === next.right) {
@@ -1858,6 +2013,11 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     zr.on("globalout", onZrOut);
 
     return () => {
+      chart.off("click", onChartClick);
+      chart.off("datazoom", onDataZoom);
+      chart.off("finished", onFinished);
+      zr.off("mousemove", onExpandMove);
+      zr.off("globalout", onExpandOut);
       zr.off("mousemove", onZrMove);
       zr.off("globalout", onZrOut);
       resizeObserver.disconnect();
@@ -1883,11 +2043,39 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       // the throwaway instance and the surviving one renders without it.
       live.hasRevealed = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [renderer]);
+  }, [renderer, mountRef, containerRef, echartsRef, getLive, syncBrushOverlayNow]);
 
+}
+
+type BarChartSyncParams = {
+  renderer: EChartsRenderer;
+  echartsRef: RefObject<EChartsInstance | null>;
+  containerRef: RefObject<HTMLDivElement | null>;
+  getLive: () => LiveState;
+  buildOption: () => EChartsOption;
+  chartOptions?: Record<string, unknown>;
+  isLoading: boolean;
+  animation: boolean;
+  effectiveAnimation: BarAnimationType;
+  shouldReduceMotion: boolean | null;
+  config: ChartConfig;
+  seriesKeys: string[];
+  dataLength: number;
+  bars: BarSeriesConfig[];
+  isHorizontal: boolean;
+  barCategoryGap?: number;
+  syncBrushOverlayNow: () => void;
+};
+
+function useBarChartSync({
+  renderer, echartsRef, containerRef, getLive, buildOption, chartOptions,
+  isLoading, animation, effectiveAnimation, shouldReduceMotion, config,
+  seriesKeys, dataLength, bars, isHorizontal, barCategoryGap,
+  syncBrushOverlayNow,
+}: BarChartSyncParams) {
   // ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
   useEffect(() => {
+    const live = getLive();
     const chart = echartsRef.current;
     const container = containerRef.current;
     if (!chart || !container) return;
@@ -1946,7 +2134,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       if (needsRebuild) apply();
       // Mark when the entrance settles, so the stripped-cap correction holds off
       // until the grow finishes (0 = nothing animating, correct immediately).
-      const maxStagger = data.length > 1 ? (data.length - 1) * BAR_STAGGER : 0;
+      const maxStagger = dataLength > 1 ? (dataLength - 1) * BAR_STAGGER : 0;
       live.revealEndsAt = withEntrance ? performance.now() + BAR_GROW_DURATION + maxStagger : 0;
       // Overlays live outside the option — reposition them after every push.
       syncBrushOverlayNow();
@@ -2053,7 +2241,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     };
   }, [
     renderer,
-    live,
+    getLive,
     buildOption,
     chartOptions,
     isLoading,
@@ -2062,13 +2250,29 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     shouldReduceMotion,
     config,
     seriesKeys,
-    data.length,
+    dataLength,
     bars,
     isHorizontal,
     barCategoryGap,
     syncBrushOverlayNow,
+    echartsRef,
+    containerRef,
   ]);
 
+}
+
+type BarChartDefaultTooltipParams = {
+  renderer: EChartsRenderer;
+  echartsRef: RefObject<EChartsInstance | null>;
+  tooltipSlot: TooltipSlot;
+  isLoading: boolean;
+  dataLength: number;
+  seriesKeysLength: number;
+};
+
+function useBarChartDefaultTooltip({
+  renderer, echartsRef, tooltipSlot, isLoading, dataLength, seriesKeysLength,
+}: BarChartDefaultTooltipParams) {
   // ── Default tooltip — show the tooltip at `defaultIndex` with no hover ────────
   // Recharts' `defaultIndex` keeps a tooltip open on load; ECharts has no static
   // equivalent, so dispatch `showTip` once the layout has settled.
@@ -2085,12 +2289,27 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     tooltipSlot.present,
     tooltipSlot.defaultIndex,
     isLoading,
-    data.length,
-    seriesKeys.length,
+    dataLength,
+    seriesKeysLength,
+    echartsRef,
   ]);
 
+}
+
+type BarChartShimmerParams = {
+  renderer: EChartsRenderer;
+  echartsRef: RefObject<EChartsInstance | null>;
+  getLive: () => LiveState;
+  isLoading: boolean;
+  loadingBars: number;
+};
+
+function useBarChartShimmer({
+  renderer, echartsRef, getLive, isLoading, loadingBars,
+}: BarChartShimmerParams) {
   // ── Loading shimmer — rAF sweeps a bright band across the gray bars ──────────
   useEffect(() => {
+    const live = getLive();
     const chart = echartsRef.current;
     if (!chart || !isLoading) return;
 
@@ -2129,71 +2348,15 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
         true,
       );
       chart.setOption(
-        { series: [{ id: "__loading", data: loadingData(), itemStyle: { color: fill } }] },
+        { series: [{ id: "__loading", data: ensureLoadingData(live, loadingBars), itemStyle: { color: fill } }] },
         { silent: true, lazyUpdate: true },
       );
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [renderer, live, isLoading, loadingBars, loadingData]);
+  }, [renderer, echartsRef, getLive, isLoading, loadingBars]);
 
-  // ── Legend overlay position ──────────────────────────────────────────────────
-  // Insets match the Recharts legend's breathing room inside the plot frame.
-  const legendStyle: CSSProperties = {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    pointerEvents: "auto",
-    ...(legendSlot.verticalAlign === "top"
-      ? { top: 12 }
-      : legendSlot.verticalAlign === "bottom"
-        ? { bottom: brushEnabled ? brushHeight + 16 : 12 }
-        : { top: "50%", transform: "translateY(-50%)" }),
-  };
-
-  return (
-    <div
-      ref={containerRef}
-      data-chart={chartId}
-      className={`relative flex flex-col text-xs ${className ?? ""}`}
-    >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
-
-      <div className="relative min-h-0 w-full flex-1">
-        <div ref={mountRef} className="h-full min-h-0 w-full" />
-      </div>
-
-      {legendSlot.present && !isLoading && (
-        <LegendOverlay
-          seriesKeys={seriesKeys}
-          config={config}
-          variant={legendSlot.variant}
-          align={legendSlot.align}
-          verticalAlign={legendSlot.verticalAlign}
-          selectedKey={selectedDataKey}
-          hoveredKey={null}
-          isClickable={legendSlot.isClickable}
-          onToggle={toggleSelection}
-          style={legendStyle}
-        />
-      )}
-
-      {isLoading && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
-          >
-            <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
-            <span>Loading</span>
-          </motion.div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

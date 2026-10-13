@@ -29,7 +29,7 @@ function Menu() {
     >
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu className="gap-6">
+          <SidebarMenu className="flex flex-col gap-6 items-center">
             {links.map((link) => (
               <ShapeIcon key={link.to} {...link} />
             ))}

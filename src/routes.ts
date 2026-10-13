@@ -1,15 +1,17 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, type RouteObject } from "react-router-dom";
+import QueryStateLayout from "@/lib/QueryStateLayout";
 import RouteErrorBoundary from "@/pages/RouteErrorBoundary";
+import ResetPassword from "@/pages/ResetPassword";
 import Products from "@/pages/Products";
-import Graphs from "@/pages/Graphs";
 import Profile from "@/pages/Profile";
+import Graphs from "@/pages/Graphs";
 import Signup from "@/pages/Signup";
 import Login from "@/pages/Login";
 import Home from "@/pages/Home";
-import QuimiaSidebarProvider from "@/components/QuimiaSidebarProvider";
 import ProtectedRoute from "@/lib/ProtectedRoute";
+import Sidebar from "@/pages/Sidebar";
 
-const router = createBrowserRouter([
+const routes: RouteObject[] = [
   {
     path: "/login",
     Component: Login,
@@ -21,11 +23,16 @@ const router = createBrowserRouter([
     ErrorBoundary: RouteErrorBoundary,
   },
   {
+    path: "/reset-password",
+    Component: ResetPassword,
+    ErrorBoundary: RouteErrorBoundary,
+  },
+  {
     Component: ProtectedRoute,
     ErrorBoundary: RouteErrorBoundary,
     children: [
       {
-        Component: QuimiaSidebarProvider,
+        Component: Sidebar,
         children: [
           {
             path: "/",
@@ -51,6 +58,8 @@ const router = createBrowserRouter([
       },
     ],
   },
-]);
+];
+
+const router = createBrowserRouter([{ Component: QueryStateLayout, ErrorBoundary: RouteErrorBoundary, children: routes }]);
 
 export default router;

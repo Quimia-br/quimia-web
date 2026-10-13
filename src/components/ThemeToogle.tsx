@@ -3,13 +3,14 @@ import { Button } from "./ui/button";
 import { Moon, Sun } from "lucide-react";
 
 function ThemeToogle() {
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <Button
+      type="button"
       className="rounded-full"
-      aria-label={isDark ? "Light" : "Dark" + " theme"}
+      aria-label={isDark ? "Alternar para tema claro" : "Alternar para tema escuro"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       variant="onColor"
       size="icon-md"
