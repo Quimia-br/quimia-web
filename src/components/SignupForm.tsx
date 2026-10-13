@@ -10,9 +10,9 @@ import {
   loadFormDraft,
   useFormDraft,
 } from "@/hooks/use-form-draft";
-import { useCallback } from "react";
-import { useRegister } from "@/hooks/use-register";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { register as registerCompany } from "@/services/auth";
 import axios from "axios";
 
 const STORAGE_KEY = "quimia:signup-draft";
@@ -32,7 +32,7 @@ const formSchema = z.object({
 });
 
 function SignupForm() {
-  const register = useRegister();
+  const [registrationError, setRegistrationError] = useState(false);
   const navigate = useNavigate();
   const form = useForm({
     defaultValues: loadFormDraft(STORAGE_KEY, {
@@ -49,8 +49,10 @@ function SignupForm() {
       modeAfterSubmission: "change",
     }),
     onSubmit: async ({ value }) => {
+      setRegistrationError(false);
+
       try {
-        await register.mutateAsync({
+        await registerCompany({
           nome: value.nome,
           cnpj: value.cnpj,
           email: value.email,
@@ -74,8 +76,11 @@ function SignupForm() {
                 onSubmit: fieldError.message,
               },
             }));
+            return;
           }
         }
+
+        setRegistrationError(true);
       }
     },
   });
@@ -169,7 +174,7 @@ function SignupForm() {
       </form.Field>
 
       <div className="flex flex-col gap-2">
-        {register.isError && !Object.values(errors).some(Boolean) && (
+        {registrationError && !Object.values(errors).some(Boolean) && (
           <p className="text-sm text-center text-destructive" role="alert">
             Não foi possível cadastrar. Tente novamente.
           </p>

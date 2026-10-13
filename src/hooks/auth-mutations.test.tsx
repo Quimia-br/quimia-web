@@ -6,8 +6,8 @@ import type { PropsWithChildren } from "react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { authKeys } from "./use-user";
-import { useRegister } from "./use-register";
 import { useLogout } from "./use-logout";
+import { register as registerCompany } from "@/services/auth";
 
 const empresa = { id: 1, nome: "Omo", email: "omo@example.com" };
 const originalAdapter = api.defaults.adapter;
@@ -31,12 +31,9 @@ describe("auth mutation cache", () => {
 
   it("does not authenticate the newly registered company", async () => {
     api.defaults.adapter = async (config) => ({ config, status: 201, statusText: "Created", headers: new AxiosHeaders(), data: empresa });
-    const { client, wrapper } = setup();
-    const { result } = renderHook(() => useRegister(), { wrapper });
+    const { client } = setup();
 
-    await act(async () => {
-      await result.current.mutateAsync({ nome: "Omo", cnpj: "11222333000181", email: empresa.email, senha: "senhaOmo123" });
-    });
+    await registerCompany({ nome: "Omo", cnpj: "11222333000181", email: empresa.email, senha: "senhaOmo123" });
 
     expect(client.getQueryData(authKeys.user())).toBeUndefined();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
@@ -46,13 +43,10 @@ describe("auth mutation cache", () => {
     const currentCompany = { ...empresa, id: 7, nome: "Empresa atual" };
     useAuthStore.getState().actions.login("current-session", currentCompany);
     api.defaults.adapter = async (config) => ({ config, status: 201, statusText: "Created", headers: new AxiosHeaders(), data: empresa });
-    const { client, wrapper } = setup();
+    const { client } = setup();
     client.setQueryData(authKeys.user(), currentCompany);
-    const { result } = renderHook(() => useRegister(), { wrapper });
 
-    await act(async () => {
-      await result.current.mutateAsync({ nome: empresa.nome, cnpj: "11222333000181", email: empresa.email, senha: "senhaOmo123" });
-    });
+    await registerCompany({ nome: empresa.nome, cnpj: "11222333000181", email: empresa.email, senha: "senhaOmo123" });
 
     expect(client.getQueryData(authKeys.user())).toEqual(currentCompany);
     expect(useAuthStore.getState().user).toEqual(currentCompany);

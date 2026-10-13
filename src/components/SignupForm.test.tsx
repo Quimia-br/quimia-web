@@ -1,7 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AxiosError, AxiosHeaders } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SignupForm from "@/components/SignupForm";
@@ -10,16 +9,13 @@ import { register } from "@/services/auth";
 vi.mock("@/services/auth", () => ({ register: vi.fn() }));
 
 function renderSignupForm() {
-  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/signup"]}>
-        <Routes>
-          <Route path="/signup" element={<SignupForm />} />
-          <Route path="/login" element={<p>Tela de login</p>} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <MemoryRouter initialEntries={["/signup"]}>
+      <Routes>
+        <Route path="/signup" element={<SignupForm />} />
+        <Route path="/login" element={<p>Tela de login</p>} />
+      </Routes>
+    </MemoryRouter>,
   );
 }
 
@@ -93,7 +89,7 @@ describe("SignupForm", () => {
 
     expect(await screen.findByText("Tela de login")).toBeInTheDocument();
     expect(localStorage.getItem("quimia:signup-draft")).toBeNull();
-    expect(register).toHaveBeenCalledWith({ nome: "Omo", cnpj: "11.222.333/0001-81", email: "omo@example.com", senha: "senhaOmo123" }, expect.anything());
+    expect(register).toHaveBeenCalledWith({ nome: "Omo", cnpj: "11.222.333/0001-81", email: "omo@example.com", senha: "senhaOmo123" });
   });
 
   it.each([
