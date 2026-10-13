@@ -1,23 +1,18 @@
 import type { ReactNode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
-import { ViteThemeProvider } from "@space-man/react-theme-animation";
+import { ThemeProvider } from "./lib/theme-provider";
 
-type AppProvidersProps = {
+export type ProvidersProps = {
   children: ReactNode;
 };
 
-export function AppProviders({ children }: AppProvidersProps) {
+function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ViteThemeProvider
-        defaultTheme="system"
-        defaultColorTheme="default"
-        storageKey="theme"
-        colorStorageKey="color-theme"
-      >
-        {children}
-      </ViteThemeProvider>
+      <ThemeProvider>{children}</ThemeProvider>
     </QueryClientProvider>
   );
 }
+
+export default Providers;

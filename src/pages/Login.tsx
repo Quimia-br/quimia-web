@@ -1,13 +1,13 @@
 import MainTitle from "@/components/MainTitle";
 import Logo from "@/components/Logo";
-import LoginForm from "@/components/login/LoginForm";
+import LoginForm from "@/components/LoginForm";
 
 function Login() {
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen gap-10 px-5 py-8 overflow-hidden lg:items-stretch sm:px-8 sm:py-12 lg:px-12 lg:flex-row lg:justify-between xl:px-24">
+    <main className="relative flex flex-col items-center justify-center min-h-screen gap-10 px-5 py-8 overflow-hidden lg:items-stretch sm:px-8 sm:py-8 lg:p-12 lg:flex-row lg:justify-between xl:px-24">
       <section className="flex flex-row justify-around w-full lg:flex-col sm:items-center lg:flex-1 lg:items-start lg:justify-end">
         <MainTitle
-          className="max-w-md text-[1rem] flex flex-1 lg:flex-none"
+          className="flex flex-1 max-w-md text-5xl lg:flex-none"
           title="Transforme a forma como você limpa sua casa"
         />
 
@@ -17,7 +17,6 @@ function Login() {
       <section className="flex items-center justify-center w-full lg:flex-1">
         <article className="flex flex-col gap-8">
           <MainTitle
-            className="text-[0.85rem]"
             title="Seja bem-vindo de volta ao Quimia!"
             description="Faça login abaixo"
           />

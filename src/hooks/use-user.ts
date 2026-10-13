@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { getMe } from "@/services/auth"
+import { getMe } from "@/services/empresas"
 
 export const authKeys = {
   all: ["auth"] as const,

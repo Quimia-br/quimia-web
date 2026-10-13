@@ -83,4 +83,33 @@ describe("TextField", () => {
     expect(input).toHaveValue("");
     expect(screen.queryByRole("button", { name: "Clear input" })).not.toBeInTheDocument();
   });
+
+  it("keeps a visually hidden label available to assistive technology", () => {
+    render(<TextField label="Search" hideLabel />);
+    expect(screen.getByRole("textbox", { name: "Search" })).toHaveAccessibleName("Search");
+    expect(screen.getByText("Search")).toHaveClass("sr-only");
+    expect(screen.getByText("Search")).not.toHaveClass("hidden");
+  });
+
+  it.each([
+    { description: "Search by company", hideDescription: true },
+    { error: "Company is required", hideErrorDescription: true },
+  ])("keeps visually hidden guidance available to assistive technology: %o", (props) => {
+    render(<TextField label="Company" {...props} />);
+    const message = props.error ?? props.description;
+    expect(screen.getByRole("textbox", { name: "Company" })).toHaveAccessibleDescription(message);
+    expect(screen.getByText(message)).toHaveClass("sr-only");
+    expect(screen.getByText(message)).not.toHaveClass("hidden");
+  });
+
+  it("restores its description when an error is removed and keeps IDs unique", () => {
+    const { rerender } = render(<><TextField label="First" error="Required" description="First help" /><TextField label="Second" /></>);
+    const first = screen.getByRole("textbox", { name: "First" });
+    expect(first.id).not.toBe(screen.getByRole("textbox", { name: "Second" }).id);
+    expect(first).toBeInvalid();
+    rerender(<><TextField label="First" description="First help" /><TextField label="Second" /></>);
+    expect(first).not.toBeInvalid();
+    expect(first).toHaveAccessibleDescription("First help");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });

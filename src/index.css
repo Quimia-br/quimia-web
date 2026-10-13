@@ -150,6 +150,13 @@
 }
 
 @theme inline {
+  --animate-audio-wave: audio-wave 700ms ease-in-out infinite alternate;
+
+  @keyframes audio-wave {
+    from { transform: scaleY(0.45); }
+    to { transform: scaleY(1); }
+  }
+
   --color-border-primary: var(--border-primary);
   --color-border-secondary: var(--border-secondary);
   --color-border-focus: var(--border-focus);
@@ -183,10 +190,9 @@
   --color-surface-base: var(--surface-base);
   --color-surface-disabled: var(--surface-disabled);
 
-  --text-display: 3em;
   --text-display--line-height: 1.1;
 
-  --text-subtitle: 1.85em;
+  --text-subtitle: 0.618em;
   --text-subtitle--line-height: 1.2;
 
   --color-text-primary: var(--text-primary);

@@ -43,7 +43,7 @@ function TextField({
       {label && (
         <FieldLabel
           htmlFor={inputId}
-          className={cn("text-foreground", { hidden: hideLabel })}
+          className={cn("text-foreground", { "sr-only": hideLabel })}
         >
           {label}
         </FieldLabel>
@@ -54,7 +54,7 @@ function TextField({
       {error ? (
         <FieldError
           id={errorId}
-          className={cn("font-medium", { hidden: hideErrorDescription })}
+          className={cn("font-medium", { "sr-only": hideErrorDescription })}
         >
           {error}
         </FieldError>
@@ -62,7 +62,7 @@ function TextField({
         description && (
           <FieldDescription
             id={descriptionId}
-            className={cn("font-medium", { hidden: hideDescription })}
+            className={cn("font-medium", { "sr-only": hideDescription })}
           >
             {description}
           </FieldDescription>
