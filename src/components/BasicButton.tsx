@@ -1,5 +1,4 @@
 import type { ComponentProps, ReactNode } from "react";
-import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 
 interface BasicButtonProps extends Omit<
@@ -7,13 +6,15 @@ interface BasicButtonProps extends Omit<
   "size" | "variant"
 > {
   icon?: ReactNode;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "critical";
+  size?: "default" | "compact";
 }
 
 function BasicButton({
   children,
   className,
   icon,
+  size = "default",
   type = "button",
   variant = "primary",
   ...props
@@ -21,21 +22,20 @@ function BasicButton({
   return (
     <Button
       type={type}
-      variant={variant === "primary" ? "default" : "secondary"}
-      size="basic"
-      className={cn("relative h-14", className)}
+      variant={variant === "primary" ? "default" : variant}
+      size={size === "compact" ? "basic-compact" : "basic"}
+      className={className}
       {...props}
     >
-      {icon && (
-        <span
-          aria-hidden="true"
-          data-slot="button-icon"
-          className="absolute left-3 flex size-4 items-center justify-center [&>svg]:size-full"
-        >
+      {icon != null && (
+        <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center [&_svg]:size-full">
           {icon}
         </span>
       )}
-      <span className="truncate">{children}</span>
+      <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 text-center whitespace-normal [overflow-wrap:anywhere]">
+        {children}
+      </span>
+      {icon != null && <span aria-hidden="true" className="size-5 shrink-0" />}
     </Button>
   );
 }

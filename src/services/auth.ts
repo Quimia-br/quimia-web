@@ -1,8 +1,17 @@
 import { api } from "@/lib/api";
-import { clearAccessToken, setAccessToken } from "@/lib/auth-token";
-import type { LoginCredentials, LoginResponse, UserMe } from "@/types/User";
+import { useAuthStore } from "@/lib/auth-token";
+import type { EmpresaSummary } from "@/types/Empresa";
+import type { LoginCredentials, LoginResponse, RegisterRequest, ResetPasswordData } from "@/types/AuthState";
 
-const path = "/api/v1/auth"
+const path = "/empresas/auth"
+
+export async function register(credentials: RegisterRequest) {
+  const { data } = await api.post<EmpresaSummary>(
+    `${path}/register`,
+    credentials,
+  )
+  return data
+}
 
 export async function login(credentials: LoginCredentials) {
   const { data } = await api.post<LoginResponse>(
@@ -10,21 +19,23 @@ export async function login(credentials: LoginCredentials) {
     credentials,
   )
 
-  setAccessToken(data.accessToken)
+  useAuthStore.getState().actions.login(data.accessToken, data.empresa)
 
-  return data.user
-}
-
-export async function getMe() {
-  const { data } = await api.get<UserMe>(`${path}/me`)
-
-  return data
+  return data.empresa
 }
 
 export async function logout() {
   try {
     await api.post(`${path}/logout`)
   } finally {
-    clearAccessToken()
+    useAuthStore.getState().actions.logout()
   }
+}
+
+export async function forgotPassword(email: string) {
+  await api.post(`${path}/forgot-password`, { email });
+}
+
+export async function resetPassword({ resetToken, novaSenha }: ResetPasswordData) {
+  await api.post(`${path}/reset-password`, { resetToken, novaSenha });
 }

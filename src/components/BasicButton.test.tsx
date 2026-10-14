@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Circle } from "lucide-react";
@@ -7,7 +8,7 @@ import BasicButton from "./BasicButton";
 describe("BasicButton", () => {
   it("uses its label as the accessible name and keeps the icon decorative", () => {
     render(
-      <BasicButton icon={<Circle data-testid="button-icon" />}>
+      <BasicButton icon={<svg role="img" data-testid="button-icon"><title>Circle</title></svg>}>
         Continue
       </BasicButton>,
     );
@@ -73,4 +74,39 @@ describe("BasicButton", () => {
       );
     },
   );
+
+  it("supports the critical action from the design without exposing its icon name", () => {
+    render(<BasicButton variant="critical" icon={<Circle />}>Excluir</BasicButton>);
+
+    expect(screen.getByRole("button", { name: "Excluir" })).toHaveClass(
+      "bg-feedback-error", "text-foreground-error",
+    );
+  });
+
+  it("can be activated by Enter and Space without submitting its form", async () => {
+    const user = userEvent.setup();
+    const clicked = vi.fn();
+    const submitted = vi.fn((event: React.FormEvent) => event.preventDefault());
+    render(<form onSubmit={submitted}><BasicButton onClick={clicked}>Continuar</BasicButton></form>);
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Continuar" })).toHaveFocus();
+    await user.keyboard("{Enter} ");
+    expect(clicked).toHaveBeenCalledTimes(2);
+    expect(submitted).not.toHaveBeenCalled();
+  });
+
+  it("submits only when the caller explicitly uses type submit", async () => {
+    const user = userEvent.setup();
+    const submitted = vi.fn((event: React.FormEvent) => event.preventDefault());
+    render(<form onSubmit={submitted}><BasicButton type="submit">Salvar</BasicButton></form>);
+    await user.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(submitted).toHaveBeenCalledOnce();
+  });
+
+  it("forwards a ref so a form can move focus to its primary action", () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(<BasicButton ref={ref}>Salvar</BasicButton>);
+    ref.current?.focus();
+    expect(screen.getByRole("button", { name: "Salvar" })).toHaveFocus();
+  });
 });
