@@ -10,12 +10,13 @@ interface FeedbackItemProps {
 }
 
 const feedbackItemVariants = cva(
-  "rounded-full [&_svg]:shrink-0 [&_svg]:size-12 bg-secondary flex items-center justify-center",
+  "rounded-full [&_svg]:shrink-0 [&_svg]:min-size-12 bg-secondary flex items-center justify-center",
   {
     variants: {
       variant: {
         default: "text-foreground",
         success: "ring-3 ring-feedback-success text-feedback-success",
+        destructive: "bg-destructive text-desctrutive-foreground",
         error: "ring-3 ring-feedback-error text-feedback-error",
       },
       size: {
@@ -32,11 +33,7 @@ const feedbackItemVariants = cva(
 );
 
 function FeedbackItem({ icon, variant, size, className }: FeedbackItemProps) {
-  return (
-    <div className={cn(feedbackItemVariants({ variant, size }), className)}>
-      {icon}
-    </div>
-  );
+  return <div className={cn(feedbackItemVariants({ variant, size }), className)}>{icon}</div>;
 }
 
 export default FeedbackItem;

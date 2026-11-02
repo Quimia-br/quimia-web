@@ -1,15 +1,15 @@
-import { useQuery } from "@tanstack/react-query"
-import { getMe } from "@/services/empresas"
+import { useQuery } from "@tanstack/react-query";
+import { getMe } from "@/services/empresas";
 
 export const authKeys = {
   all: ["auth"] as const,
   user: () => [...authKeys.all, "user"] as const,
-}
+};
 
 export function useUser() {
   return useQuery({
     queryKey: authKeys.user(),
-    queryFn: getMe,
+    queryFn: ({ signal }) => getMe(signal),
     retry: false,
-  })
+  });
 }

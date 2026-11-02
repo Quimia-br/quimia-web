@@ -10,16 +10,21 @@ export function loadFormDraft<T>(key: string, fallback: T): T {
   }
 }
 
-export function useFormDraft<T>(
-  key: string,
-  values: T,
-  selectDraft: (values: T) => Partial<T>,
-) {
+export function useFormDraft<T>(key: string, values: T, selectDraft: (values: T) => Partial<T>) {
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(selectDraft(values)));
+    const draft = JSON.stringify(selectDraft(values));
+    try {
+      localStorage.setItem(key, draft);
+    } catch {
+      // Saving a draft is optional when storage is full or unavailable.
+    }
   }, [key, values, selectDraft]);
 }
 
 export function clearFormDraft(key: string) {
-  localStorage.removeItem(key);
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // A rejected cleanup must not turn a successful submission into a failure.
+  }
 }

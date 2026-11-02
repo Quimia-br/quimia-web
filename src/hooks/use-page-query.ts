@@ -10,17 +10,23 @@ export const pageQueryParser = createParser({
     return Number.isSafeInteger(page) ? page : null;
   },
   serialize: (page: number) => String(page),
-}).withDefault(1).withOptions({
-  history: "push", clearOnDefault: true, scroll: false, shallow: false,
-});
+})
+  .withDefault(1)
+  .withOptions({
+    history: "push",
+    clearOnDefault: true,
+    scroll: false,
+    shallow: false,
+  });
 
 /** Supply the API total once known; omit it while fetching pagination metadata. */
 export function usePageQuery(totalPages?: number) {
   const location = useLocation();
   const [requestedPage, setPage] = useQueryState("p", pageQueryParser);
-  const knownTotal = totalPages !== undefined && Number.isSafeInteger(totalPages) && totalPages > 0
-    ? totalPages
-    : undefined;
+  const knownTotal =
+    totalPages !== undefined && Number.isSafeInteger(totalPages) && totalPages > 0
+      ? totalPages
+      : undefined;
   const page = knownTotal === undefined ? requestedPage : Math.min(requestedPage, knownTotal);
 
   useEffect(() => {

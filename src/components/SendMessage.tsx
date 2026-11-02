@@ -1,9 +1,5 @@
 import { useId, useRef, useState, type KeyboardEvent } from "react";
-import {
-  LoaderCircle,
-  SendHorizontal,
-  Square,
-} from "lucide-react";
+import { LoaderCircle, SendHorizontal, Square } from "lucide-react";
 import { cn } from "cn";
 import {
   InputGroup,
@@ -53,15 +49,9 @@ function SubmitIcon({
   isGenerating: boolean;
   canStop: boolean;
 }) {
-  if (isGenerating && canStop)
-    return <Square aria-hidden="true" className="size-3" />;
+  if (isGenerating && canStop) return <Square aria-hidden="true" className="size-3" />;
   if (sending || isGenerating)
-    return (
-      <LoaderCircle
-        aria-hidden="true"
-        className="size-5 motion-safe:animate-spin"
-      />
-    );
+    return <LoaderCircle aria-hidden="true" className="size-5 motion-safe:animate-spin" />;
   return <SendHorizontal aria-hidden="true" className="size-5" />;
 }
 
@@ -84,14 +74,28 @@ interface MessageActionsProps {
   onSubmit: () => void;
 }
 
-function VoiceMessageButton({ speech, voiceId, disabled, sending, isGenerating, onVoice }: Pick<MessageActionsProps, "speech" | "voiceId" | "disabled" | "sending" | "isGenerating" | "onVoice">) {
+function VoiceMessageButton({
+  speech,
+  voiceId,
+  disabled,
+  sending,
+  isGenerating,
+  onVoice,
+}: Pick<
+  MessageActionsProps,
+  "speech" | "voiceId" | "disabled" | "sending" | "isGenerating" | "onVoice"
+>) {
   return (
     <InputGroupButton
       aria-label={speech.active ? "Parar ditado" : "Ditar mensagem"}
       aria-pressed={speech.active}
       aria-describedby={voiceId}
-      title={speech.error ?? (!speech.supported ? "Ditado indisponível neste navegador" : undefined)}
-      disabled={disabled || sending || isGenerating || !speech.supported || speech.phase === "stopping"}
+      title={
+        speech.error ?? (!speech.supported ? "Ditado indisponível neste navegador" : undefined)
+      }
+      disabled={
+        disabled || sending || isGenerating || !speech.supported || speech.phase === "stopping"
+      }
       data-state={speech.speaking ? "speaking" : speech.phase}
       size="icon-sm"
       className={cn(
@@ -106,18 +110,43 @@ function VoiceMessageButton({ speech, voiceId, disabled, sending, isGenerating, 
   );
 }
 
-function MessageActions({ speech, voiceEnabled, voiceId, disabled, sending, isGenerating, canStop, cannotSend, colorScheme, onVoice, onSubmit }: MessageActionsProps) {
+function MessageActions({
+  speech,
+  voiceEnabled,
+  voiceId,
+  disabled,
+  sending,
+  isGenerating,
+  canStop,
+  cannotSend,
+  colorScheme,
+  onVoice,
+  onSubmit,
+}: MessageActionsProps) {
   return (
-    <InputGroupAddon align="inline-end" className="shrink-0 self-end items-center gap-3 p-0 [&>button]:m-0">
-      {voiceEnabled && <VoiceMessageButton speech={speech} voiceId={voiceId} disabled={disabled}
-        sending={sending} isGenerating={isGenerating} onVoice={onVoice} />}
+    <InputGroupAddon
+      align="inline-end"
+      className="shrink-0 self-end items-center gap-3 p-0 [&>button]:m-0"
+    >
+      {voiceEnabled && (
+        <VoiceMessageButton
+          speech={speech}
+          voiceId={voiceId}
+          disabled={disabled}
+          sending={sending}
+          isGenerating={isGenerating}
+          onVoice={onVoice}
+        />
+      )}
       <InputGroupButton
         aria-label={submitLabel(isGenerating, canStop, sending)}
         disabled={cannotSend}
         size="icon-sm"
         className={cn(
           "size-10 rounded-full text-foreground-primary focus-visible:ring-border-focus",
-          colorScheme === "primary" ? "bg-secondary hover:bg-secondary-hover" : "bg-card hover:bg-muted",
+          colorScheme === "primary"
+            ? "bg-secondary hover:bg-secondary-hover"
+            : "bg-card hover:bg-muted",
         )}
         onClick={onSubmit}
       >
@@ -127,15 +156,36 @@ function MessageActions({ speech, voiceEnabled, voiceId, disabled, sending, isGe
   );
 }
 
-function VoiceMessageStatus({ speech, voiceId }: { speech: ReturnType<typeof useSpeechInput>; voiceId: string }) {
+function VoiceMessageStatus({
+  speech,
+  voiceId,
+}: {
+  speech: ReturnType<typeof useSpeechInput>;
+  voiceId: string;
+}) {
   let message = "";
   if (speech.error) message = speech.error;
   else if (!speech.supported) message = "Ditado indisponível neste navegador. Digite a mensagem.";
   else if (speech.active) message = "Ditado ativo.";
-  return <span id={voiceId} className="sr-only" role={speech.error ? "alert" : "status"}>{message}</span>;
+  return (
+    <span id={voiceId} className="sr-only" role={speech.error ? "alert" : "status"}>
+      {message}
+    </span>
+  );
 }
 
-function messageDisplayState({ draftValue, draftError, sending, speechActive, transcript, voiceBase, maxLength, disabled, isGenerating, canStop }: {
+function messageDisplayState({
+  draftValue,
+  draftError,
+  sending,
+  speechActive,
+  transcript,
+  voiceBase,
+  maxLength,
+  disabled,
+  isGenerating,
+  canStop,
+}: {
   draftValue: string;
   draftError: string | null;
   sending: boolean;
@@ -150,7 +200,8 @@ function messageDisplayState({ draftValue, draftError, sending, speechActive, tr
   const text = speechActive && transcript ? appendSpeech(voiceBase, transcript) : draftValue;
   const overLimit = maxLength !== undefined && text.length > maxLength;
   const error = overLimit ? `A mensagem excede o limite de ${maxLength} caracteres.` : draftError;
-  const cannotSend = disabled || (!canStop && (sending || isGenerating || !text.trim() || overLimit));
+  const cannotSend =
+    disabled || (!canStop && (sending || isGenerating || !text.trim() || overLimit));
   return { text, error, cannotSend };
 }
 
@@ -189,9 +240,16 @@ function SendMessage({
   });
   const canStop = isGenerating && !!onStop;
   const { text, error, cannotSend } = messageDisplayState({
-    draftValue: draft.value, draftError: draft.error, sending: draft.sending,
-    speechActive: speech.active, transcript: speech.transcript, voiceBase,
-    maxLength, disabled, isGenerating, canStop,
+    draftValue: draft.value,
+    draftError: draft.error,
+    sending: draft.sending,
+    speechActive: speech.active,
+    transcript: speech.transcript,
+    voiceBase,
+    maxLength,
+    disabled,
+    isGenerating,
+    canStop,
   });
 
   async function submit() {
@@ -225,10 +283,7 @@ function SendMessage({
   }
 
   return (
-    <Field
-      data-invalid={!!error}
-      className={cn("w-full min-w-0 max-w-[424px] gap-2", className)}
-    >
+    <Field data-invalid={!!error} className={cn("w-full min-w-0 max-w-[424px] gap-2", className)}>
       <FieldLabel htmlFor={inputId} className="sr-only">
         {label}
       </FieldLabel>
@@ -280,9 +335,16 @@ function SendMessage({
             }}
           />
         </ScrollArea>
-        <MessageActions speech={speech} voiceEnabled={voiceEnabled} voiceId={voiceId}
-          disabled={disabled} sending={draft.sending} isGenerating={isGenerating}
-          canStop={canStop} cannotSend={cannotSend} colorScheme={colorScheme}
+        <MessageActions
+          speech={speech}
+          voiceEnabled={voiceEnabled}
+          voiceId={voiceId}
+          disabled={disabled}
+          sending={draft.sending}
+          isGenerating={isGenerating}
+          canStop={canStop}
+          cannotSend={cannotSend}
+          colorScheme={colorScheme}
           onVoice={() => {
             if (speech.active) speech.stop();
             else {
@@ -291,7 +353,10 @@ function SendMessage({
             }
             inputRef.current?.focus();
           }}
-          onSubmit={() => { void submit(); }} />
+          onSubmit={() => {
+            void submit();
+          }}
+        />
       </InputGroup>
       {error && <FieldError id={errorId}>{error}</FieldError>}
       {voiceEnabled && <VoiceMessageStatus speech={speech} voiceId={voiceId} />}

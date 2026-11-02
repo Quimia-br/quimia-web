@@ -56,9 +56,9 @@ jobs:
             echo
             echo "**Resultado:** ${CHECK_RESULT}"
             echo
-            echo '**O que valida:** instalação com lockfile congelado, checagem de tipos TypeScript e build de produção do Vite.'
+            echo '**O que valida:** instalação com lockfile congelado, checagem de tipos TypeScript e build de produção do Vite+.'
             echo
-            echo '**Critério de aprovação:** `pnpm install --frozen-lockfile` e `pnpm run build` (`tsc -b && vite build`) terminam sem erro e `dist/index.html` existe.'
+            echo '**Critério de aprovação:** `pnpm install --frozen-lockfile` e `pnpm run build` (`tsc -b && vp build`) terminam sem erro e `dist/index.html` existe.'
             if [ "${CHECK_RESULT}" = success ]; then
               echo
               echo 'O bundle foi produzido e disponibilizado ao job de artefato.'
@@ -85,9 +85,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run ESLint
+      - name: Run Vite+ checks and TypeScript
         id: lint
-        run: pnpm run lint
+        run: pnpm run check
 
       - name: Explain the Lint check
         if: always()
@@ -99,15 +99,15 @@ jobs:
             echo
             echo "**Resultado:** ${CHECK_RESULT}"
             echo
-            echo '**O que valida:** regras ESLint do projeto, incluindo React Hooks, React Refresh e TanStack Query.'
+            echo '**O que valida:** formatação Oxfmt, regras Oxlint migradas de ESLint (incluindo React Hooks e React Refresh) e tipos da aplicação e dos testes.'
             echo
-            echo '**Critério de aprovação:** `pnpm run lint` termina sem erros.'
+            echo '**Critério de aprovação:** `pnpm run check` termina sem erros.'
             if [ "${CHECK_RESULT}" = success ]; then
               echo
-              echo 'Nenhuma violação de lint foi encontrada.'
+              echo 'Formatação, lint e tipos foram validados.'
             else
               echo
-              echo 'Não passou. Consulte o log do ESLint; ele lista arquivo, linha e regra violada.'
+              echo 'Não passou. Consulte os logs de Oxfmt, Oxlint e TypeScript acima.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -128,6 +128,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Type-check application and tests
+        run: pnpm run typecheck
+
       - name: Run Vitest
         id: tests
         run: pnpm run test
@@ -142,9 +145,9 @@ jobs:
             echo
             echo "**Resultado:** ${CHECK_RESULT}"
             echo
-            echo '**O que valida:** testes Vitest com jsdom e Testing Library.'
+            echo '**O que valida:** tipos da aplicação e de tests/, além dos testes Vitest com jsdom e Testing Library.'
             echo
-            echo '**Critério de aprovação:** `pnpm run test` (`vitest run`) termina sem testes com falha.'
+            echo '**Critério de aprovação:** `pnpm run typecheck` e `pnpm run test` (`vp test run`) terminam sem erros.'
             if [ "${CHECK_RESULT}" = success ]; then
               echo
               echo 'Todos os testes executados passaram.'
@@ -312,8 +315,8 @@ jobs:
             echo
             echo '| Check | Resultado | O que prova |'
             echo '|---|---|---|'
-            printf '| Build | `%s` | Tipos válidos e bundle Vite de produção. |\n' "$BUILD_RESULT"
-            printf '| Lint | `%s` | Regras ESLint do projeto. |\n' "$LINT_RESULT"
+            printf '| Build | `%s` | Tipos válidos e bundle Vite+ de produção. |\n' "$BUILD_RESULT"
+            printf '| Lint | `%s` | Oxfmt, Oxlint e tipos TypeScript. |\n' "$LINT_RESULT"
             printf '| Unit tests | `%s` | Testes Vitest. |\n' "$TESTS_RESULT"
             printf '| Render artifact | `%s` | Bundle estático validado (`index.html`, `#root`, assets JS). |\n' "$ARTIFACT_RESULT"
             if [ "$EVENT_NAME" = 'release' ]; then

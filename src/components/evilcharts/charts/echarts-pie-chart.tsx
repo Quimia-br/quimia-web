@@ -1,5 +1,7 @@
 "use client";
 
+import { applyChartTypography, observeChartAppearance } from "@/lib/chart-typography";
+
 import {
   resolveTooltipPosition,
   roundnessClass,
@@ -952,17 +954,7 @@ function usePieRuntime({
       tooltip: buildTooltipOption(ctx),
       series: buildPieSeries(ctx),
     };
-  }, [
-    data,
-    config,
-    nameKey,
-    dataKey,
-    pie,
-    selectedSector,
-    tooltipSlot,
-    legendSlot,
-    isLoading,
-  ]);
+  }, [data, config, nameKey, dataKey, pie, selectedSector, tooltipSlot, legendSlot, isLoading]);
 
   // ── Init + resize + theme observer (per renderer instance) ───────────────────
   useEffect(() => {
@@ -988,12 +980,8 @@ function usePieRuntime({
     resizeObserver.observe(mount);
 
     // Light/dark flips change no React state — re-resolve and push directly.
-    const themeObserver = new MutationObserver(() => {
+    const themeObserver = observeChartAppearance(() => {
       live.repush();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
     });
 
     chart.on("click", (params) => {
@@ -1040,7 +1028,7 @@ function usePieRuntime({
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's
       // shape, so re-assert it. The only cast in the file.
-      chart.setOption(merged as EChartsOption, { notMerge: true });
+      chart.setOption(applyChartTypography(merged, container) as EChartsOption, { notMerge: true });
     };
 
     // Intro reveal — ECharts' native pie expansion, enabled only for the first

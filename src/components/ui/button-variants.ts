@@ -32,8 +32,10 @@ const buttonVariants = cva(
         "icon-tiny":
           "size-10 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-md": "size-16",
-        basic: "h-auto min-h-[61px] w-full gap-2 rounded-full border-0 px-5 py-4 leading-[1.2] [&_svg:not([class*='size-'])]:size-5",
-        "basic-compact": "h-auto min-h-12 w-full gap-1 rounded-full border-0 px-4 py-3 text-base leading-[1.2] [&_svg:not([class*='size-'])]:size-5",
+        basic:
+          "h-auto min-h-[61px] w-full gap-2 rounded-full border-0 px-5 py-4 leading-[1.2] [&_svg:not([class*='size-'])]:size-5",
+        "basic-compact":
+          "h-auto min-h-12 w-full gap-1 rounded-full border-0 px-4 py-3 text-base leading-[1.2] [&_svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {

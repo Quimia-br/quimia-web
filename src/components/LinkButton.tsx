@@ -1,10 +1,11 @@
 import { cn } from "cn";
 import React from "react";
-import type { VariantProps } from "class-variance-authority"
+import type { VariantProps } from "class-variance-authority";
 import { buttonVariants } from "./ui/button-variants";
 import { Link } from "react-router-dom";
 
-interface LinkButtonProps extends React.ComponentProps<typeof Link>, VariantProps<typeof buttonVariants> {}
+interface LinkButtonProps
+  extends React.ComponentProps<typeof Link>, VariantProps<typeof buttonVariants> {}
 
 function LinkButton({
   className,
@@ -14,10 +15,7 @@ function LinkButton({
 }: LinkButtonProps) {
   return (
     <Link
-      className={cn(
-        buttonVariants({ variant, size, className }),
-        "text-base",
-      )}
+      className={cn(buttonVariants({ variant, size, className }), "text-base")}
       {...linkProps}
     />
   );

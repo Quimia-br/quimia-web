@@ -1,5 +1,7 @@
 "use client";
 
+import { applyChartTypography, observeChartAppearance } from "@/lib/chart-typography";
+
 import {
   DEFAULT_ECHARTS_RENDERER,
   buildChartCss,
@@ -21,10 +23,7 @@ import {
   type TooltipRoundness,
   type TooltipVariant,
 } from "@/components/evilcharts/ui/echarts-tooltip";
-import {
-  Brush,
-  type BrushProps,
-} from "@/components/evilcharts/ui/echarts-brush";
+import { Brush, type BrushProps } from "@/components/evilcharts/ui/echarts-brush";
 import {
   buildBrushDataZoom,
   syncBrushOverlay,
@@ -1340,8 +1339,14 @@ type LiveState = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function useLineChartInstance({
-  renderer, mountRef, containerRef, echartsRef, liveRef, setHoveredDataKey,
-  toggleSelection, syncBrushOverlayNow,
+  renderer,
+  mountRef,
+  containerRef,
+  echartsRef,
+  liveRef,
+  setHoveredDataKey,
+  toggleSelection,
+  syncBrushOverlayNow,
 }: {
   renderer: EChartsRenderer;
   mountRef: React.RefObject<HTMLDivElement | null>;
@@ -1384,12 +1389,8 @@ function useLineChartInstance({
     resizeObserver.observe(mount);
 
     // Light/dark flips change no React state — re-resolve and push directly.
-    const themeObserver = new MutationObserver(() => {
+    const themeObserver = observeChartAppearance(() => {
       live.repush();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
     });
 
     chart.on("click", (params) => {
@@ -1582,13 +1583,32 @@ function useLineChartInstance({
       // the throwaway instance and the surviving one renders without it.
       live.hasRevealed = false;
     };
-  }, [renderer, mountRef, containerRef, echartsRef, liveRef, setHoveredDataKey, toggleSelection, syncBrushOverlayNow]);
+  }, [
+    renderer,
+    mountRef,
+    containerRef,
+    echartsRef,
+    liveRef,
+    setHoveredDataKey,
+    toggleSelection,
+    syncBrushOverlayNow,
+  ]);
 }
 
 function useLineChartOptionSync({
-  renderer, echartsRef, containerRef, liveRef, buildOption, chartOptions,
-  isLoading, animation, effectiveAnimation, shouldReduceMotion, config,
-  seriesKeys, syncBrushOverlayNow,
+  renderer,
+  echartsRef,
+  containerRef,
+  liveRef,
+  buildOption,
+  chartOptions,
+  isLoading,
+  animation,
+  effectiveAnimation,
+  shouldReduceMotion,
+  config,
+  seriesKeys,
+  syncBrushOverlayNow,
 }: {
   renderer: EChartsRenderer;
   echartsRef: React.RefObject<EChartsInstance | null>;
@@ -1625,7 +1645,7 @@ function useLineChartOptionSync({
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's
       // shape, so re-assert it. The only cast in the file.
-      chart.setOption(merged as EChartsOption, { notMerge: true });
+      chart.setOption(applyChartTypography(merged, container) as EChartsOption, { notMerge: true });
       // Overlays live outside the option — reposition them after every push.
       syncBrushOverlayNow();
     };
@@ -1666,11 +1686,16 @@ function useLineChartOptionSync({
     seriesKeys,
     syncBrushOverlayNow,
   ]);
-
-
 }
 
-function useAnimatedLineSweep({ renderer, echartsRef, liveRef, lines, hasSelection, isLoading }: {
+function useAnimatedLineSweep({
+  renderer,
+  echartsRef,
+  liveRef,
+  lines,
+  hasSelection,
+  isLoading,
+}: {
   renderer: EChartsRenderer;
   echartsRef: React.RefObject<EChartsInstance | null>;
   liveRef: React.RefObject<LiveState>;
@@ -1716,11 +1741,15 @@ function useAnimatedLineSweep({ renderer, echartsRef, liveRef, lines, hasSelecti
       cancelAnimationFrame(raf);
     };
   }, [renderer, echartsRef, liveRef, lines, hasSelection, isLoading]);
-
-
 }
 
-function useLineLoadingShimmer({ renderer, echartsRef, liveRef, isLoading, loadingPoints }: {
+function useLineLoadingShimmer({
+  renderer,
+  echartsRef,
+  liveRef,
+  isLoading,
+  loadingPoints,
+}: {
   renderer: EChartsRenderer;
   echartsRef: React.RefObject<EChartsInstance | null>;
   liveRef: React.RefObject<LiveState>;
@@ -1785,15 +1814,30 @@ function useLineLoadingShimmer({ renderer, echartsRef, liveRef, isLoading, loadi
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [renderer, echartsRef, liveRef, isLoading, loadingPoints]);
-
-
 }
 
 function useLineChartOption<TData extends Record<string, unknown>>({
-  data, config, lines, xCategoryKey, curveType, selectedDataKey, hasSelection,
-  showGrid, xAxisSlot, yAxisSlot, tooltipSlot, legendSlot, isLoading, loadingData,
-  showBrush, brushHeight, enableHoverHighlight, enableHoverReveal, liveRef,
-  echartsRef, mountRef,
+  data,
+  config,
+  lines,
+  xCategoryKey,
+  curveType,
+  selectedDataKey,
+  hasSelection,
+  showGrid,
+  xAxisSlot,
+  yAxisSlot,
+  tooltipSlot,
+  legendSlot,
+  isLoading,
+  loadingData,
+  showBrush,
+  brushHeight,
+  enableHoverHighlight,
+  enableHoverReveal,
+  liveRef,
+  echartsRef,
+  mountRef,
 }: {
   data: TData[];
   config: ChartConfig;
@@ -2068,32 +2112,39 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
       enableHoverReveal,
     };
     live.dataLength = data.length;
-  }, [brushSlot.onChange, brushSlot.formatLabel, onSelectionChange, clickableKeys, selectedDataKey, seriesKeys, enableHoverHighlight, enableHoverReveal, data.length]);
+  }, [
+    brushSlot.onChange,
+    brushSlot.formatLabel,
+    onSelectionChange,
+    clickableKeys,
+    selectedDataKey,
+    seriesKeys,
+    enableHoverHighlight,
+    enableHoverReveal,
+    data.length,
+  ]);
 
-  const toggleSelection = useCallback(
-    (key: string) => {
-      const live = liveRef.current;
-      // A new click selection takes over the canvas dim, so any live hover
-      // highlight is torn down at this moment — the mouseover guard then keeps it
-      // from re-arming while the selection stands. Hover is only ever active
-      // while NO selection exists (see that guard), so a hovered key here always
-      // means this click is establishing a selection.
-      if (live.hoveredKey !== null) {
-        const chart = echartsRef.current;
-        const companions = chart ? live.companionIdsByKey.get(live.hoveredKey) : undefined;
-        if (chart && companions) {
-          for (const seriesId of companions) chart.dispatchAction({ type: "downplay", seriesId });
-        }
-        live.hoveredKey = null;
-        setHoveredDataKey(null);
+  const toggleSelection = useCallback((key: string) => {
+    const live = liveRef.current;
+    // A new click selection takes over the canvas dim, so any live hover
+    // highlight is torn down at this moment — the mouseover guard then keeps it
+    // from re-arming while the selection stands. Hover is only ever active
+    // while NO selection exists (see that guard), so a hovered key here always
+    // means this click is establishing a selection.
+    if (live.hoveredKey !== null) {
+      const chart = echartsRef.current;
+      const companions = chart ? live.companionIdsByKey.get(live.hoveredKey) : undefined;
+      if (chart && companions) {
+        for (const seriesId of companions) chart.dispatchAction({ type: "downplay", seriesId });
       }
-      const next = live.handlers.selectedDataKey === key ? null : key;
-      live.handlers.selectedDataKey = next;
-      setSelectedDataKey(next);
-      live.handlers.onSelectionChange?.(next);
-    },
-    [],
-  );
+      live.hoveredKey = null;
+      setHoveredDataKey(null);
+    }
+    const next = live.handlers.selectedDataKey === key ? null : key;
+    live.handlers.selectedDataKey = next;
+    setSelectedDataKey(next);
+    live.handlers.onSelectionChange?.(next);
+  }, []);
 
   // Reposition the brush overlays from the live refs — safe to call from drag
   // events, hover tracking, and pushes alike, since it never touches setOption.
@@ -2135,21 +2186,54 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
   }, []);
 
   const buildOption = useLineChartOption({
-    data, config, lines, xCategoryKey, curveType, selectedDataKey, hasSelection,
-    showGrid, xAxisSlot, yAxisSlot, tooltipSlot, legendSlot, isLoading, loadingData,
-    showBrush, brushHeight, enableHoverHighlight, enableHoverReveal, liveRef,
-    echartsRef, mountRef,
+    data,
+    config,
+    lines,
+    xCategoryKey,
+    curveType,
+    selectedDataKey,
+    hasSelection,
+    showGrid,
+    xAxisSlot,
+    yAxisSlot,
+    tooltipSlot,
+    legendSlot,
+    isLoading,
+    loadingData,
+    showBrush,
+    brushHeight,
+    enableHoverHighlight,
+    enableHoverReveal,
+    liveRef,
+    echartsRef,
+    mountRef,
   });
 
   useLineChartInstance({
-    renderer, mountRef, containerRef, echartsRef, liveRef,
-    setHoveredDataKey, toggleSelection, syncBrushOverlayNow,
+    renderer,
+    mountRef,
+    containerRef,
+    echartsRef,
+    liveRef,
+    setHoveredDataKey,
+    toggleSelection,
+    syncBrushOverlayNow,
   });
 
   useLineChartOptionSync({
-    renderer, echartsRef, containerRef, liveRef, buildOption, chartOptions,
-    isLoading, animation, effectiveAnimation, shouldReduceMotion, config,
-    seriesKeys, syncBrushOverlayNow,
+    renderer,
+    echartsRef,
+    containerRef,
+    liveRef,
+    buildOption,
+    chartOptions,
+    isLoading,
+    animation,
+    effectiveAnimation,
+    shouldReduceMotion,
+    config,
+    seriesKeys,
+    syncBrushOverlayNow,
   });
 
   useAnimatedLineSweep({ renderer, echartsRef, liveRef, lines, hasSelection, isLoading });
@@ -2200,15 +2284,15 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
       {isLoading && (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
           <LazyMotion features={domAnimation}>
-          <m.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
-          >
-            <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
-            <span>Loading</span>
-          </m.div>
+            <m.div
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
+            >
+              <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
+              <span>Loading</span>
+            </m.div>
           </LazyMotion>
         </div>
       )}

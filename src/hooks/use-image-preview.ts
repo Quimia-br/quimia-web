@@ -10,7 +10,10 @@ function createPreviewStore(value: ImageValue) {
       const ownedUrl = URL.createObjectURL(value);
       preview = ownedUrl;
       notify();
-      return () => { URL.revokeObjectURL(ownedUrl); preview = null; };
+      return () => {
+        URL.revokeObjectURL(ownedUrl);
+        preview = null;
+      };
     },
   };
 }

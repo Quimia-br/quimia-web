@@ -2,10 +2,10 @@ import { DataDisplayProviderContext, type DataDisplay } from "@/hooks/use-data-d
 import { usePersistedPreference } from "@/hooks/use-persisted-preference";
 
 type DataDisplayProviderProps = {
-  children: React.ReactNode
-  defaultDataDisplay?: DataDisplay
-  storageKey?: string
-}
+  children: React.ReactNode;
+  defaultDataDisplay?: DataDisplay;
+  storageKey?: string;
+};
 
 const isDataDisplay = (value: string): value is DataDisplay =>
   value === "table" || value === "grid";
@@ -16,7 +16,9 @@ export function DataDisplayProvider({
   storageKey = "quimia:data-display",
 }: DataDisplayProviderProps) {
   const [dataDisplay, setDataDisplay] = usePersistedPreference(
-    storageKey, defaultDataDisplay, isDataDisplay,
+    storageKey,
+    defaultDataDisplay,
+    isDataDisplay,
   );
 
   const value = { dataDisplay, setDataDisplay };
@@ -25,5 +27,5 @@ export function DataDisplayProvider({
     <DataDisplayProviderContext.Provider value={value}>
       {children}
     </DataDisplayProviderContext.Provider>
-  )
+  );
 }

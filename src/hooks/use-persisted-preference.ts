@@ -14,14 +14,17 @@ export function usePersistedPreference<T extends string>(
     }
   });
 
-  const setPreference = useCallback((next: T) => {
-    setValue(next);
-    try {
-      window.localStorage.setItem(storageKey, next);
-    } catch {
-      // Keep the current choice in memory when storage is unavailable.
-    }
-  }, [storageKey]);
+  const setPreference = useCallback(
+    (next: T) => {
+      setValue(next);
+      try {
+        window.localStorage.setItem(storageKey, next);
+      } catch {
+        // Keep the current choice in memory when storage is unavailable.
+      }
+    },
+    [storageKey],
+  );
 
   return [value, setPreference] as const;
 }

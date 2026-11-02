@@ -29,8 +29,7 @@ function TextField({
   const errorId = `${inputId}-error`;
   const messageId = error ? errorId : description ? descriptionId : undefined;
   const describedBy =
-    [inputProps["aria-describedby"], messageId].filter(Boolean).join(" ") ||
-    undefined;
+    [inputProps["aria-describedby"], messageId].filter(Boolean).join(" ") || undefined;
   const sharedInputProps = {
     ...inputProps,
     id: inputId,
@@ -41,10 +40,7 @@ function TextField({
   return (
     <Field className="gap-4 text-base font-medium" data-invalid={!!error}>
       {label && (
-        <FieldLabel
-          htmlFor={inputId}
-          className={cn("text-foreground", { "sr-only": hideLabel })}
-        >
+        <FieldLabel htmlFor={inputId} className={cn("text-foreground", { "sr-only": hideLabel })}>
           {label}
         </FieldLabel>
       )}
@@ -52,10 +48,7 @@ function TextField({
       <ActionInput {...sharedInputProps} onClick={onClick} />
 
       {error ? (
-        <FieldError
-          id={errorId}
-          className={cn("font-medium", { "sr-only": hideErrorDescription })}
-        >
+        <FieldError id={errorId} className={cn("font-medium", { "sr-only": hideErrorDescription })}>
           {error}
         </FieldError>
       ) : (

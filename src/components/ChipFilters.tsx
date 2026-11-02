@@ -35,10 +35,7 @@ function ChipFilters<TValue extends string>({
   "aria-describedby": describedBy,
 }: ChipFiltersProps<TValue>) {
   return (
-    <div
-      id={id}
-      className={cn("flex flex-wrap items-center gap-[18px]", className)}
-    >
+    <div id={id} className={cn("flex flex-wrap items-center gap-[18px]", className)}>
       <ToggleGroup<TValue>
         multiple
         value={value}
@@ -49,20 +46,13 @@ function ChipFilters<TValue extends string>({
         className="flex min-w-0 flex-wrap items-center gap-[18px]"
       >
         {options.map((option) => (
-          <Chip
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-          >
+          <Chip key={option.value} value={option.value} disabled={option.disabled}>
             {option.label}
           </Chip>
         ))}
       </ToggleGroup>
       {clearable && (
-        <ChipAction
-          onClick={() => onValueChange([])}
-          disabled={disabled || value.length === 0}
-        >
+        <ChipAction onClick={() => onValueChange([])} disabled={disabled || value.length === 0}>
           {clearLabel}
         </ChipAction>
       )}

@@ -5,12 +5,8 @@ import Form from "@/components/smoothui/form";
 import FormTextField from "@/components/FormTextField";
 import { cnpjSchema, formatCNPJ } from "@/lib/utils/formatCnpj";
 import LinkButton from "@/components/LinkButton";
-import {
-  clearFormDraft,
-  loadFormDraft,
-  useFormDraft,
-} from "@/hooks/use-form-draft";
-import { useCallback, useState } from "react";
+import { clearFormDraft, loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
+import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { register as registerCompany } from "@/services/auth";
 import axios from "axios";
@@ -20,7 +16,10 @@ const registrationErrors: Record<string, { field: "email" | "cnpj" | "senha"; me
   email_in_use: { field: "email", message: "Este e-mail já está em uso." },
   cnpj_in_use: { field: "cnpj", message: "Este CNPJ já está cadastrado." },
   invalid_cnpj: { field: "cnpj", message: "O CNPJ informado é inválido." },
-  weak_password: { field: "senha", message: "Use uma senha com pelo menos 8 caracteres, uma letra e um número." },
+  weak_password: {
+    field: "senha",
+    message: "Use uma senha com pelo menos 8 caracteres, uma letra e um número.",
+  },
   password_too_long: { field: "senha", message: "A senha deve ter no máximo 72 bytes." },
 };
 
@@ -32,7 +31,6 @@ const formSchema = z.object({
 });
 
 function SignupForm() {
-  const [registrationError, setRegistrationError] = useState(false);
   const navigate = useNavigate();
   const form = useForm({
     defaultValues: loadFormDraft(STORAGE_KEY, {
@@ -49,8 +47,6 @@ function SignupForm() {
       modeAfterSubmission: "change",
     }),
     onSubmit: async ({ value }) => {
-      setRegistrationError(false);
-
       try {
         await registerCompany({
           nome: value.nome,
@@ -61,12 +57,10 @@ function SignupForm() {
 
         clearFormDraft(STORAGE_KEY);
 
-        navigate("/login", { replace: true });
+        navigate("/signup/success", { replace: true });
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          const apiError = error.response?.data as
-            | { detail?: string }
-            | undefined;
+          const apiError = error.response?.data as { detail?: string } | undefined;
           const fieldError = registrationErrors[apiError?.detail ?? ""];
           if (fieldError) {
             form.setFieldMeta(fieldError.field, (prev) => ({
@@ -80,7 +74,7 @@ function SignupForm() {
           }
         }
 
-        setRegistrationError(true);
+        navigate("/signup/error", { replace: true });
       }
     },
   });
@@ -88,7 +82,7 @@ function SignupForm() {
     return Object.fromEntries(
       Object.entries(state.fieldMeta).map(([field, meta]) => {
         const issue = meta.errors[0];
-        return [field, typeof issue === "string" ? issue : issue?.message ?? ""];
+        return [field, typeof issue === "string" ? issue : (issue?.message ?? "")];
       }),
     );
   });
@@ -174,16 +168,9 @@ function SignupForm() {
       </form.Field>
 
       <div className="flex flex-col gap-2">
-        {registrationError && !Object.values(errors).some(Boolean) && (
-          <p className="text-sm text-center text-destructive" role="alert">
-            Não foi possível cadastrar. Tente novamente.
-          </p>
-        )}
         <form.Subscribe
           selector={(state) => ({
-            hasAllValues: Object.values(state.values).every(
-              (value) => value.trim().length > 0,
-            ),
+            hasAllValues: Object.values(state.values).every((value) => value.trim().length > 0),
             isSubmitting: state.isSubmitting,
           })}
         >
@@ -194,8 +181,7 @@ function SignupForm() {
           )}
         </form.Subscribe>
         <p className="text-base text-center text-muted-foreground">
-          Já tem conta no Quimia?{" "}
-          <LinkButton to="/login">Entre aqui</LinkButton>
+          Já tem conta no Quimia? <LinkButton to="/login">Entre aqui</LinkButton>
         </p>
       </div>
     </Form>

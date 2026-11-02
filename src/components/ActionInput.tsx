@@ -84,7 +84,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
       value,
       ...props
     },
-    forwardedRef
+    forwardedRef,
   ) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? "");
@@ -130,7 +130,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
       if (onChange) {
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,
-          "value"
+          "value",
         )?.set;
 
         if (nativeInputValueSetter && inputRef.current) {
@@ -151,7 +151,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
           "h-12 rounded-full bg-input align-middle",
           "has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-3 has-[[data-slot=input-group-control]:focus-visible]:ring-ring",
           "has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-3 has-[[data-slot][aria-invalid=true]]:ring-destructive",
-          className
+          className,
         )}
       >
         <InputGroupInput
@@ -161,7 +161,10 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
           disabled={disabled}
           readOnly={readOnly}
           onChange={handleChange}
-          className="h-full py-0 pl-6 pr-4 text-sm border-none"
+          className={cn(
+            "h-full py-0 pl-6 pr-4 text-sm border-none",
+            isPasswordToggleable && "[&::-ms-reveal]:hidden",
+          )}
           {...props}
         />
         <InputAction
@@ -174,7 +177,7 @@ const ActionInput = React.forwardRef<HTMLInputElement, ActionInputProps>(
         />
       </InputGroup>
     );
-  }
+  },
 );
 
 ActionInput.displayName = "ActionInput";

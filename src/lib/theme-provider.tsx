@@ -3,10 +3,10 @@ import { usePersistedPreference } from "@/hooks/use-persisted-preference";
 import { useEffect, useSyncExternalStore } from "react";
 
 type ThemeProviderProps = {
-  children: React.ReactNode
-  defaultTheme?: Theme
-  storageKey?: string
-}
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+};
 
 const isTheme = (value: string): value is Theme =>
   value === "light" || value === "dark" || value === "system";
@@ -14,8 +14,7 @@ const isTheme = (value: string): value is Theme =>
 const systemThemeQuery = "(prefers-color-scheme: dark)";
 
 const prefersDark = () =>
-  typeof window.matchMedia === "function" &&
-  window.matchMedia(systemThemeQuery).matches;
+  typeof window.matchMedia === "function" && window.matchMedia(systemThemeQuery).matches;
 
 const subscribeToSystemTheme = (onChange: () => void) => {
   if (typeof window.matchMedia !== "function") return () => {};
@@ -34,18 +33,14 @@ export function ThemeProvider({
   const resolvedTheme = theme === "system" ? (systemDark ? "dark" : "light") : theme;
 
   useEffect(() => {
-    const root = window.document.documentElement
+    const root = window.document.documentElement;
 
-    root.classList.remove("light", "dark")
+    root.classList.remove("light", "dark");
 
-    root.classList.add(resolvedTheme)
-  }, [resolvedTheme])
+    root.classList.add(resolvedTheme);
+  }, [resolvedTheme]);
 
-  const value = { theme, resolvedTheme, setTheme }
+  const value = { theme, resolvedTheme, setTheme };
 
-  return (
-    <ThemeProviderContext.Provider value={value}>
-      {children}
-    </ThemeProviderContext.Provider>
-  )
+  return <ThemeProviderContext.Provider value={value}>{children}</ThemeProviderContext.Provider>;
 }

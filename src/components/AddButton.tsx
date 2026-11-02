@@ -1,14 +1,10 @@
 import { Plus } from "lucide-react";
 import { Button } from "./ui/button";
+import type { ComponentProps } from "react";
 
-function AddButton() {
+function AddButton(props: ComponentProps<typeof Button>) {
   return (
-    <Button
-      className="rounded-full"
-      aria-label="Add"
-      onClick={() => {}}
-      size="icon-md"
-    >
+    <Button className="rounded-full" aria-label="Add" size="icon-md" {...props}>
       <Plus />
     </Button>
   );

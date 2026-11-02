@@ -3,10 +3,28 @@ services:
     runtime: static
     name: quimia
     branch: main
-    # O deploy é disparado pelo workflow ci.yml (Deploy Hook) quando uma Release é publicada.
     autoDeployTrigger: off
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
     staticPublishPath: dist
+    headers:
+      - path: /index.html
+        name: Cache-Control
+        value: no-store
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /reset-password*
+        name: Cache-Control
+        value: no-store
+      - path: /reset-password/*
+        name: Cache-Control
+        value: no-store
+      - path: /recover-password*
+        name: Cache-Control
+        value: no-store
+      - path: /recuperar-senha*
+        name: Cache-Control
+        value: no-store
     envVars:
       - key: NODE_VERSION
         value: 24

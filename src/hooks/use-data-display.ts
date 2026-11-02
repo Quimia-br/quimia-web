@@ -7,14 +7,12 @@ type DataDisplayProviderState = {
   setDataDisplay: (dataDisplay: DataDisplay) => void;
 };
 
-export const DataDisplayProviderContext =
-  createContext<DataDisplayProviderState | null>(null);
+export const DataDisplayProviderContext = createContext<DataDisplayProviderState | null>(null);
 
 const useDataDisplay = () => {
   const context = useContext(DataDisplayProviderContext);
 
-  if (context === null)
-    throw new Error("useDataDisplay must be used within a DataDisplayProvider");
+  if (context === null) throw new Error("useDataDisplay must be used within a DataDisplayProvider");
 
   return context;
 };
