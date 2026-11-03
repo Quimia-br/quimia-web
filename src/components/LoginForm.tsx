@@ -8,6 +8,7 @@ import { useLogin } from "@/hooks/use-login";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 import { useCallback } from "react";
+import axios from "axios";
 
 const STORAGE_KEY = "quimia:login-draft";
 
@@ -15,6 +16,23 @@ const formSchema = z.object({
   email: z.email("Informe um e-mail valido"),
   password: z.string().nonempty("Informe uma senha"),
 });
+
+function loginErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ detail?: string }>(error)) {
+    const status = error.response?.status;
+    const detail = error.response?.data?.detail;
+    if (status === 423 && detail === "blocked") {
+      return "Sua conta está temporariamente bloqueada por tentativas de acesso. Aguarde alguns minutos e tente novamente.";
+    }
+    if (status === 403 && detail === "inactive") {
+      return "Esta conta de empresa está inativa. Entre em contato com o responsável pela empresa.";
+    }
+    if (status !== undefined && status >= 500) {
+      return "O serviço está temporariamente indisponível. Tente novamente mais tarde.";
+    }
+  }
+  return "Não foi possível entrar. Verifique seu e-mail e senha.";
+}
 
 function LoginForm() {
   const login = useLogin();
@@ -39,9 +57,7 @@ function LoginForm() {
       });
 
       const from = location.state?.from;
-      const destination = from
-        ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
-        : "/";
+      const destination = from ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}` : "/";
 
       navigate(destination, { replace: true });
     },
@@ -51,10 +67,7 @@ function LoginForm() {
     if (!rawErrors) return undefined;
 
     return Object.fromEntries(
-      Object.entries(rawErrors).map(([field, issues]) => [
-        field,
-        issues?.[0]?.message || "",
-      ]),
+      Object.entries(rawErrors).map(([field, issues]) => [field, issues?.[0]?.message || ""]),
     );
   });
 
@@ -74,7 +87,7 @@ function LoginForm() {
     try {
       await form.handleSubmit();
     } catch {
-      // error
+      // The mutation error is displayed below the fields.
     }
   };
 
@@ -110,17 +123,19 @@ function LoginForm() {
         )}
       </form.Field>
 
+      <LinkButton to="/reset-password">
+        Esqueceu a senha?
+      </LinkButton>
+
       <div className="flex flex-col gap-2">
         {login.isError && (
           <p className="text-sm text-center text-destructive" role="alert">
-            Não foi possível entrar. Verifique seu e-mail e senha.
+            {loginErrorMessage(login.error)}
           </p>
         )}
         <form.Subscribe
           selector={(state) => ({
-            hasAllValues: Object.values(state.values).every(
-              (value) => value.trim().length > 0,
-            ),
+            hasAllValues: Object.values(state.values).every((value) => value.trim().length > 0),
             isSubmitting: state.isSubmitting,
           })}
         >

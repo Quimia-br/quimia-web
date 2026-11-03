@@ -4,7 +4,10 @@ import { parseAsString, useQueryStates } from "nuqs";
 import { pageQueryParser } from "./use-page-query";
 
 const searchParser = parseAsString.withDefault("").withOptions({
-  history: "replace", clearOnDefault: true, scroll: false, shallow: false,
+  history: "replace",
+  clearOnDefault: true,
+  scroll: false,
+  shallow: false,
 });
 
 /** Keeps an editable draft separate from the query already applied to the URL. */
@@ -25,21 +28,39 @@ export function useSearchQuery(debounceMs: number, disabled: boolean) {
 
   // Keep a pending edit through other query changes on this route. Back/Forward,
   // a different route, or a changed applied search owns the saved value.
-  if (draft.appliedQuery !== query || draft.pathname !== location.pathname ||
-      (draft.locationKey !== location.key && navigationType === "POP")) {
-    setDraft({ locationKey: location.key, pathname: location.pathname, appliedQuery: query, value: query, pending: false, composing: false, changedAt: 0 });
+  if (
+    draft.appliedQuery !== query ||
+    draft.pathname !== location.pathname ||
+    (draft.locationKey !== location.key && navigationType === "POP")
+  ) {
+    setDraft({
+      locationKey: location.key,
+      pathname: location.pathname,
+      appliedQuery: query,
+      value: query,
+      pending: false,
+      composing: false,
+      changedAt: 0,
+    });
   } else if (draft.locationKey !== location.key) {
     setDraft({ ...draft, locationKey: location.key });
   }
 
-  const apply = useCallback((value: string) => {
-    if (disabled) return;
-    const normalized = value.trim();
-    setDraft((current) => ({ ...current, value: normalized, pending: false, composing: false }));
-    if (normalized === query && (normalized !== "" || !new URLSearchParams(location.search).has("q"))) return;
-    // Apply the filter and first page together: no request with a stale page.
-    void setQuery({ q: normalized || null, p: null }, { history: "replace" });
-  }, [disabled, location.search, query, setQuery]);
+  const apply = useCallback(
+    (value: string) => {
+      if (disabled) return;
+      const normalized = value.trim();
+      setDraft((current) => ({ ...current, value: normalized, pending: false, composing: false }));
+      if (
+        normalized === query &&
+        (normalized !== "" || !new URLSearchParams(location.search).has("q"))
+      )
+        return;
+      // Apply the filter and first page together: no request with a stale page.
+      void setQuery({ q: normalized || null, p: null }, { history: "replace" });
+    },
+    [disabled, location.search, query, setQuery],
+  );
 
   useEffect(() => {
     if (!draft.pending || draft.composing || disabled || draft.locationKey !== location.key) return;

@@ -1,5 +1,5 @@
-import { Slider as SliderPrimitive } from "@base-ui/react/slider"
-import { cn } from "cn"
+import { Slider as SliderPrimitive } from "@base-ui/react/slider";
+import { cn } from "cn";
 
 function Slider({
   className,
@@ -7,13 +7,14 @@ function Slider({
   value,
   min = 0,
   max = 100,
+  thumbLabel,
   ...props
-}: SliderPrimitive.Root.Props) {
+}: SliderPrimitive.Root.Props & { thumbLabel?: string }) {
   const _values = Array.isArray(value)
     ? value
     : Array.isArray(defaultValue)
       ? defaultValue
-      : [min, max]
+      : [min, max];
 
   return (
     <SliderPrimitive.Root
@@ -38,6 +39,7 @@ function Slider({
         </SliderPrimitive.Track>
         {Array.from({ length: _values.length }, (_, index) => (
           <SliderPrimitive.Thumb
+            aria-label={thumbLabel}
             data-slot="slider-thumb"
             key={index}
             className="relative block w-5 h-3 shrink-0 rounded-full border border-transparent bg-brand-primary ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
@@ -45,7 +47,7 @@ function Slider({
         ))}
       </SliderPrimitive.Control>
     </SliderPrimitive.Root>
-  )
+  );
 }
 
-export { Slider }
+export { Slider };

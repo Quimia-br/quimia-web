@@ -59,7 +59,11 @@ function release(recognizer: SpeechRecognizer | null) {
   recognizer.onnomatch = null;
   recognizer.onerror = null;
   recognizer.onresult = null;
-  try { recognizer.abort(); } catch { /* Some engines have already ended. */ }
+  try {
+    recognizer.abort();
+  } catch {
+    /* Some engines have already ended. */
+  }
 }
 
 interface SpeechInputOptions {
@@ -115,13 +119,22 @@ export function useSpeechInput({ enabled, language, scope, onFinal }: SpeechInpu
       recognizer.maxAlternatives = 1;
       const current = () => recognizerRef.current === recognizer;
 
-      recognizer.onstart = () => { if (current()) setPhase("listening"); };
-      recognizer.onspeechstart = () => { if (current()) setSpeaking(true); };
-      recognizer.onspeechend = () => { if (current()) setSpeaking(false); };
+      recognizer.onstart = () => {
+        if (current()) setPhase("listening");
+      };
+      recognizer.onspeechstart = () => {
+        if (current()) setSpeaking(true);
+      };
+      recognizer.onspeechend = () => {
+        if (current()) setSpeaking(false);
+      };
       recognizer.onresult = (event) => {
         if (!current()) return;
         const results = Array.from(event.results);
-        const text = results.map((result) => result[0]?.transcript.trim() ?? "").filter(Boolean).join(" ");
+        const text = results
+          .map((result) => result[0]?.transcript.trim() ?? "")
+          .filter(Boolean)
+          .join(" ");
         setTranscript(text);
         // Engines revise interim results and replay earlier final results.
         // Rebuild the complete utterance instead of appending each event.
@@ -152,7 +165,13 @@ export function useSpeechInput({ enabled, language, scope, onFinal }: SpeechInpu
       recognizer.start();
     } catch (cause) {
       cancel();
-      setError(speechError(cause instanceof DOMException && cause.name === "NotAllowedError" ? "not-allowed" : "unknown"));
+      setError(
+        speechError(
+          cause instanceof DOMException && cause.name === "NotAllowedError"
+            ? "not-allowed"
+            : "unknown",
+        ),
+      );
     }
   }
 
@@ -161,11 +180,23 @@ export function useSpeechInput({ enabled, language, scope, onFinal }: SpeechInpu
     if (!recognizer || phase === "stopping") return;
     setPhase("stopping");
     setSpeaking(false);
-    try { recognizer.stop(); } catch {
+    try {
+      recognizer.stop();
+    } catch {
       cancel();
       setError(speechError("unknown"));
     }
   }
 
-  return { supported: !!Recognizer, active: enabled && phase !== "idle", speaking: enabled && phase === "listening" && speaking, phase, transcript, error, start, stop, cancel };
+  return {
+    supported: !!Recognizer,
+    active: enabled && phase !== "idle",
+    speaking: enabled && phase === "listening" && speaking,
+    phase,
+    transcript,
+    error,
+    start,
+    stop,
+    cancel,
+  };
 }

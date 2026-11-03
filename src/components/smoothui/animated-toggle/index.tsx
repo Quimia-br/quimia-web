@@ -3,12 +3,7 @@
 import { cn } from "cn";
 import { AnimatePresence, LazyMotion, domAnimation, useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
-import {
-  type KeyboardEvent,
-  type ReactNode,
-  useCallback,
-  useState,
-} from "react";
+import { type KeyboardEvent, type ReactNode, useCallback, useState } from "react";
 
 export interface AnimatedToggleProps {
   /** Controlled checked state */
@@ -37,74 +32,90 @@ const SPRING = {
   type: "spring" as const,
 };
 
-// Modificado: w- e h- ajustados e remoção de p-0.5 para fazer o thumb preencher 100% da altura interna
+// Keep the track, thumb and travel in rem so text scaling preserves their alignment.
 const SIZES = {
   lg: {
     icon: "size-3.5",
     thumb: "h-7 w-7",
-    thumbTranslate: 24, // 51px (track width) - 27px (thumb width) = 24px de deslocamento
-    track: "w-[51px] h-7",
+    thumbTranslate: "1.4375rem",
+    track: "w-[3.1875rem] h-7",
   },
   md: {
     icon: "size-3",
     thumb: "h-6 w-6",
-    thumbTranslate: 20, // 44px - 24px = 20px de deslocamento
+    thumbTranslate: "1.25rem",
     track: "w-11 h-6",
   },
   sm: {
     icon: "size-2.5",
     thumb: "h-5 w-5",
-    thumbTranslate: 16, // 36px - 20px = 16px de deslocamento
+    thumbTranslate: "1rem",
     track: "w-9 h-5",
   },
 } as const;
 
-function ToggleIcon({ reduced, className, children }: { reduced: boolean; className: string; children: ReactNode }) {
-  return <m.span
-    animate={reduced ? { opacity: 1 } : { opacity: 1, rotate: 0, scale: 1 }}
-    className={cn("flex items-center justify-center text-muted-foreground", className)}
-    exit={reduced ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, rotate: -90, scale: 0.5 }}
-    initial={reduced ? { opacity: 0 } : { opacity: 0, rotate: 90, scale: 0.5 }}
-    transition={reduced ? { duration: 0 } : SPRING}
-  >{children}</m.span>;
+function ToggleIcon({
+  reduced,
+  className,
+  children,
+}: {
+  reduced: boolean;
+  className: string;
+  children: ReactNode;
+}) {
+  return (
+    <m.span
+      animate={reduced ? { opacity: 1 } : { opacity: 1, rotate: 0, scale: 1 }}
+      className={cn("flex items-center justify-center text-muted-foreground", className)}
+      exit={
+        reduced
+          ? { opacity: 0, transition: { duration: 0 } }
+          : { opacity: 0, rotate: -90, scale: 0.5 }
+      }
+      initial={reduced ? { opacity: 0 } : { opacity: 0, rotate: 90, scale: 0.5 }}
+      transition={reduced ? { duration: 0 } : SPRING}
+    >
+      {children}
+    </m.span>
+  );
 }
 
-function ToggleThumb({ checked, size = "md", variant = "default", icons }: Pick<AnimatedToggleProps, "size" | "variant" | "icons"> & { checked: boolean }) {
+function ToggleThumb({
+  checked,
+  size = "md",
+  variant = "default",
+  icons,
+}: Pick<AnimatedToggleProps, "size" | "variant" | "icons"> & { checked: boolean }) {
   const shouldReduceMotion = useReducedMotion();
   const sizeConfig = SIZES[size];
-  const translateX = checked ? sizeConfig.thumbTranslate : 0;
+  const translateX = checked ? sizeConfig.thumbTranslate : "0rem";
   const borderRadius = variant === "morph" && !shouldReduceMotion && !checked ? 6 : 9999;
   return (
-      <m.span
-        animate={
-          shouldReduceMotion
-            ? { x: translateX }
-            : { borderRadius, x: translateX }
-        }
-        // Modificado: Adicionado bg- dinâmico com base no estado 'checked' (Cinza escuro vs Verde/Brand)
-        // Removido 'shadow-sm' e 'border' para seguir o design flat da imagem
-        className={cn(
-          "pointer-events-none flex items-center justify-center rounded-full transition-colors duration-200",
-          checked ? "bg-brand-primary" : "bg-secondary-on-color",
-          sizeConfig.thumb
+    <m.span
+      animate={shouldReduceMotion ? { x: translateX } : { borderRadius, x: translateX }}
+      // Modificado: Adicionado bg- dinâmico com base no estado 'checked' (Cinza escuro vs Verde/Brand)
+      // Removido 'shadow-sm' e 'border' para seguir o design flat da imagem
+      className={cn(
+        "pointer-events-none flex shrink-0 items-center justify-center rounded-full transition-colors duration-200",
+        checked ? "bg-brand-primary" : "bg-secondary-on-color",
+        sizeConfig.thumb,
+      )}
+      initial={false}
+      style={{ borderRadius }}
+      transition={shouldReduceMotion ? { duration: 0 } : SPRING}
+    >
+      <AnimatePresence initial={false} mode="wait">
+        {variant === "icon" && icons && (
+          <ToggleIcon
+            key={checked ? "on" : "off"}
+            reduced={!!shouldReduceMotion}
+            className={sizeConfig.icon}
+          >
+            {checked ? icons.on : icons.off}
+          </ToggleIcon>
         )}
-        initial={false}
-        style={{ borderRadius }}
-        transition={shouldReduceMotion ? { duration: 0 } : SPRING}
-      >
-        <AnimatePresence initial={false} mode="wait">
-          {variant === "icon" && icons && (
-            <ToggleIcon
-              key={checked ? "on" : "off"}
-              reduced={!!shouldReduceMotion}
-              className={sizeConfig.icon}
-            >
-              {checked ? icons.on : icons.off}
-            </ToggleIcon>
-          )}
-        </AnimatePresence>
-      </m.span>
-
+      </AnimatePresence>
+    </m.span>
   );
 }
 
@@ -141,7 +152,7 @@ const AnimatedToggle = ({
         handleToggle();
       }
     },
-    [handleToggle]
+    [handleToggle],
   );
 
   const sizeConfig = SIZES[size];
@@ -157,7 +168,7 @@ const AnimatedToggle = ({
           "bg-surface-disabled", // O fundo do track permanece cinza claro em ambos os estados na sua imagem
           disabled && "cursor-not-allowed opacity-50",
           sizeConfig.track,
-          className
+          className,
         )}
         disabled={disabled}
         onClick={handleToggle}

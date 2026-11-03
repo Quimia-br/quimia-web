@@ -17,8 +17,7 @@ export default function PageIndicator({
   label = "Paginação",
   className,
 }: PageIndicatorProps) {
-  const total =
-    Number.isSafeInteger(totalPages) && totalPages > 0 ? totalPages : 0;
+  const total = Number.isSafeInteger(totalPages) && totalPages > 0 ? totalPages : 0;
   const { page, changePage } = usePageQuery(total);
   const reduceMotion = useReducedMotion();
 

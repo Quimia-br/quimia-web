@@ -9,12 +9,14 @@ function DataDisplayToggle() {
     <Button
       type="button"
       className="rounded-full"
-      aria-label={isTable ? "Alternar para visualização em grade" : "Alternar para visualização em tabela"}
+      aria-label={
+        isTable ? "Alternar para visualização em grade" : "Alternar para visualização em tabela"
+      }
       onClick={() => setDataDisplay(isTable ? "grid" : "table")}
       variant="onColor"
       size="icon-md"
     >
-      {isTable ? <Menu /> : <Grid2X2 />}
+      {isTable ? <Grid2X2 /> : <Menu />}
     </Button>
   );
 }

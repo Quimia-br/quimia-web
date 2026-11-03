@@ -19,11 +19,7 @@ const Skeleton = ({ loading = true, children, className }: SkeletonProps) => {
   // If loading with children, wrap them and apply skeleton effect
   if (loading && children) {
     return (
-      <div
-        aria-busy="true"
-        aria-live="polite"
-        className={cn("relative", className)}
-      >
+      <div aria-busy="true" aria-live="polite" className={cn("relative", className)}>
         {/* Children are invisible but maintain layout */}
         <div className="invisible">{children}</div>
         {/* Skeleton overlay that matches children's dimensions */}
@@ -39,10 +35,7 @@ const Skeleton = ({ loading = true, children, className }: SkeletonProps) => {
   return (
     <div
       aria-busy="true"
-      className={cn(
-        "animate-pulse rounded-md bg-muted-foreground/20",
-        className
-      )}
+      className={cn("animate-pulse rounded-md bg-muted-foreground/20", className)}
     />
   );
 };

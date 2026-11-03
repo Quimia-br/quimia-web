@@ -1,11 +1,12 @@
 "use client";
 
+import { applyChartTypography, observeChartAppearance } from "@/lib/chart-typography";
+
 import {
   resolveTooltipPosition,
-  roundnessClass,
   tooltipIndicatorHtml,
   tooltipRow,
-  tooltipVariantClass,
+  tooltipShell,
   type TooltipPosition,
   type TooltipRoundness,
   type TooltipVariant,
@@ -659,9 +660,7 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
       dimmed,
     });
 
-    return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[tooltipSlot.roundness]} ${tooltipVariantClass[tooltipSlot.variant]}">
-      <div class="grid gap-1.5">${row}</div>
-    </div>`;
+    return tooltipShell({ label: "", body: row, roundness: tooltipSlot.roundness, variant: tooltipSlot.variant });
   };
 }
 
@@ -952,17 +951,7 @@ function usePieRuntime({
       tooltip: buildTooltipOption(ctx),
       series: buildPieSeries(ctx),
     };
-  }, [
-    data,
-    config,
-    nameKey,
-    dataKey,
-    pie,
-    selectedSector,
-    tooltipSlot,
-    legendSlot,
-    isLoading,
-  ]);
+  }, [data, config, nameKey, dataKey, pie, selectedSector, tooltipSlot, legendSlot, isLoading]);
 
   // ── Init + resize + theme observer (per renderer instance) ───────────────────
   useEffect(() => {
@@ -988,12 +977,8 @@ function usePieRuntime({
     resizeObserver.observe(mount);
 
     // Light/dark flips change no React state — re-resolve and push directly.
-    const themeObserver = new MutationObserver(() => {
+    const themeObserver = observeChartAppearance(() => {
       live.repush();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
     });
 
     chart.on("click", (params) => {
@@ -1040,7 +1025,7 @@ function usePieRuntime({
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's
       // shape, so re-assert it. The only cast in the file.
-      chart.setOption(merged as EChartsOption, { notMerge: true });
+      chart.setOption(applyChartTypography(merged, container) as EChartsOption, { notMerge: true });
     };
 
     // Intro reveal — ECharts' native pie expansion, enabled only for the first
@@ -1234,7 +1219,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
       data-chart={chartId}
       className={`relative flex flex-col text-xs ${className ?? ""}`}
     >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <style>{css}</style>
 
       <div className="relative min-h-0 w-full flex-1">
         {backgroundSlot.present && !isLoading && (

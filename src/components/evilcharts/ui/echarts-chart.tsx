@@ -1,3 +1,4 @@
+/* oxlint-disable react/only-export-components -- Utilities and types only; this module exports no React components. */
 import { CanvasRenderer, SVGRenderer } from "echarts/renderers";
 import type { ComponentType, ReactNode } from "react";
 import * as echarts from "echarts/core";

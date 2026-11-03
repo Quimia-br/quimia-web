@@ -1,16 +1,14 @@
 /* Regular */
 @font-face {
   font-family: "OpenDyslexic";
-  src: url("/src/assets/fonts/opendyslexic/opendyslexic-regular-webfont.woff2")
-    format("woff2");
+  src: url("/src/assets/fonts/opendyslexic/opendyslexic-regular-webfont.woff2") format("woff2");
   font-weight: 400 600;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "OpenDyslexic";
-  src: url("/src/assets/fonts/opendyslexic/opendyslexic-italic-webfont.woff2")
-    format("woff2");
+  src: url("/src/assets/fonts/opendyslexic/opendyslexic-italic-webfont.woff2") format("woff2");
   font-weight: 400 600;
   font-style: italic;
   font-display: swap;
@@ -19,16 +17,14 @@
 /* Bold */
 @font-face {
   font-family: "OpenDyslexic";
-  src: url("/src/assets/fonts/opendyslexic/opendyslexic-bold-webfont.woff2")
-    format("woff2");
+  src: url("/src/assets/fonts/opendyslexic/opendyslexic-bold-webfont.woff2") format("woff2");
   font-weight: 700 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "OpenDyslexic";
-  src: url("/src/assets/fonts/opendyslexic/opendyslexic-bolditalic-webfont.woff2")
-    format("woff2");
+  src: url("/src/assets/fonts/opendyslexic/opendyslexic-bolditalic-webfont.woff2") format("woff2");
   font-weight: 700 900;
   font-style: italic;
   font-display: swap;

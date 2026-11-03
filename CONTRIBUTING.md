@@ -10,9 +10,15 @@ Use o [template da PR](.github/pull_request_template.md) e descreva como validar
 Antes de abrir a PR:
 
 ```powershell
-pnpm run lint
+pnpm run check
 pnpm run build
-pnpm test --pool=threads --maxWorkers=1 --testTimeout=15000
+pnpm test
 ```
 
+`check` combina Oxfmt, Oxlint e a checagem TypeScript da aplicação e dos testes.
+Use `pnpm run format` para corrigir a formatação. A toolchain Vite+ é local ao
+projeto e não exige instalação global; consulte o [README](README.md).
+
 O [índice dos componentes](docs/components/components.md) contém os guias de uso.
+
+Os testes ficam em `tests/`, espelhando os caminhos de `src/`. Consulte o [guia de testes](tests/README.md) para executar a suíte, escrever novos casos e verificar os tipos dos testes.

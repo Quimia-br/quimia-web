@@ -35,23 +35,19 @@ export default function AnimatedProgressBar({
 
   return (
     <LazyMotion features={domAnimation}>
-    <div className={`w-full ${className}`}>
-      {label ? (
-        <div className={`mb-1 font-medium text-sm ${labelClassName}`}>
-          {label}
+      <div className={`w-full ${className}`}>
+        {label ? <div className={`mb-1 font-medium text-sm ${labelClassName}`}>{label}</div> : null}
+        <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+          <m.div
+            animate={{
+              x: `${Math.max(MIN_PROGRESS_VALUE, Math.min(MAX_PROGRESS_VALUE, value)) - MAX_PROGRESS_VALUE}%`,
+            }}
+            className={`h-full w-full rounded-full bg-brand-accent ${barClassName}`}
+            initial={{ x: "-100%" }}
+            transition={shouldReduceMotion ? { duration: 0 } : SPRING}
+          />
         </div>
-      ) : null}
-      <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
-        <m.div
-          animate={{
-            x: `${Math.max(MIN_PROGRESS_VALUE, Math.min(MAX_PROGRESS_VALUE, value)) - MAX_PROGRESS_VALUE}%`,
-          }}
-          className={`h-full w-full rounded-full bg-brand-accent ${barClassName}`}
-          initial={{ x: "-100%" }}
-          transition={shouldReduceMotion ? { duration: 0 } : SPRING}
-        />
       </div>
-    </div>
     </LazyMotion>
   );
 }

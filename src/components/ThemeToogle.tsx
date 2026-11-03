@@ -1,21 +1,22 @@
 import useTheme from "@/hooks/use-theme";
 import { Button } from "./ui/button";
 import { Moon, Sun } from "lucide-react";
+import { cn } from "cn";
 
-function ThemeToogle() {
+function ThemeToogle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
   return (
     <Button
       type="button"
-      className="rounded-full"
+      className={cn("size-[50px] rounded-full md:size-16", className)}
       aria-label={isDark ? "Alternar para tema claro" : "Alternar para tema escuro"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       variant="onColor"
       size="icon-md"
     >
-      {isDark ? <Moon /> : <Sun />}
+      {isDark ? <Sun /> : <Moon />}
     </Button>
   );
 }

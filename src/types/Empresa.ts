@@ -1,14 +1,23 @@
-export interface Empresa {
+export interface EmpresaSummary {
   id: number;
   nome: string;
-  cnpj: string;
   email: string;
-  senha: string;
-  fotoUrl: string;
 }
 
-export type EmpresaSummary = Pick<Empresa, "id" | "nome" | "email">;
+export interface EmpresaMe extends EmpresaSummary {
+  cnpj: string;
+  fotoUrl: string | null;
+  ativo: boolean;
+}
 
-export type UpdateEmpresa = Pick<Empresa, "nome" | "email" | "fotoUrl">;
+export interface UpdateEmpresa {
+  nome?: string;
+  email?: string;
+  fotoUrl?: string;
+}
 
-export type EmpresaMe = Omit<Empresa, "senha">;
+export interface UpdateProfile {
+  nome?: string;
+  email?: string;
+  imagem?: File;
+}

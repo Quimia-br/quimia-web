@@ -50,7 +50,7 @@ const WifiIcon = forwardRef<WifiIconHandle, WifiIconProps>(
           controls.start("fadeIn");
         }
       },
-      [controls, onMouseEnter]
+      [controls, onMouseEnter],
     );
 
     const handleMouseLeave = useCallback(
@@ -58,56 +58,56 @@ const WifiIcon = forwardRef<WifiIconHandle, WifiIconProps>(
         controls.start("fadeIn");
         onMouseLeave?.(e);
       },
-      [controls, onMouseLeave]
+      [controls, onMouseLeave],
     );
 
     return (
       <LazyMotion features={domAnimation}>
-      <div
-        className={cn(className)}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        {...props}
-      >
-        <svg
-          fill="none"
-          height={size}
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          width={size}
-          xmlns="http://www.w3.org/2000/svg"
+        <div
+          className={cn(className)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...props}
         >
-          {WIFI_LEVELS.map((level, index) => (
-            <m.path
-              animate={controls}
-              d={level.d}
-              initial={{ opacity: level.initialOpacity }}
-              key={level.d}
-              variants={{
-                fadeOut: {
-                  opacity: index === 0 ? 1 : 0,
-                  transition: { duration: 0.2 },
-                },
-                fadeIn: {
-                  opacity: 1,
-                  transition: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                    delay: level.delay,
+          <svg
+            fill="none"
+            height={size}
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width={size}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {WIFI_LEVELS.map((level, index) => (
+              <m.path
+                animate={controls}
+                d={level.d}
+                initial={{ opacity: level.initialOpacity }}
+                key={level.d}
+                variants={{
+                  fadeOut: {
+                    opacity: index === 0 ? 1 : 0,
+                    transition: { duration: 0.2 },
                   },
-                },
-              }}
-            />
-          ))}
-        </svg>
-      </div>
+                  fadeIn: {
+                    opacity: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 20,
+                      delay: level.delay,
+                    },
+                  },
+                }}
+              />
+            ))}
+          </svg>
+        </div>
       </LazyMotion>
     );
-  }
+  },
 );
 
 WifiIcon.displayName = "WifiIcon";

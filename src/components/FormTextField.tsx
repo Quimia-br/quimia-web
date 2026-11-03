@@ -1,11 +1,5 @@
 import ActionInput from "./ActionInput";
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormLabel,
-  FormMessage,
-} from "./smoothui/form";
+import { FormControl, FormDescription, FormField, FormLabel, FormMessage } from "./smoothui/form";
 
 interface FormTextFieldProps extends React.ComponentProps<typeof ActionInput> {
   name: string;
@@ -26,9 +20,9 @@ function FormInput({
   const providerDescriptions = controlProps["aria-describedby"]
     ?.split(/\s+/)
     .filter((id) => hasDescription || !id.endsWith("-form-item-description"));
-  const describedBy = [inputProps["aria-describedby"], ...(providerDescriptions ?? [])]
-    .filter(Boolean)
-    .join(" ") || undefined;
+  const describedBy =
+    [inputProps["aria-describedby"], ...(providerDescriptions ?? [])].filter(Boolean).join(" ") ||
+    undefined;
 
   return (
     <ActionInput
@@ -41,22 +35,13 @@ function FormInput({
   );
 }
 
-function FormTextField({
-  name,
-  label,
-  description,
-  onClick,
-  ...inputProps
-}: FormTextFieldProps) {
+function FormTextField({ name, label, description, onClick, ...inputProps }: FormTextFieldProps) {
   return (
     <FormField name={name} className="w-full text-base font-medium">
       <FormLabel {...(inputProps.id ? { htmlFor: inputProps.id } : {})}>{label}</FormLabel>
 
       <FormControl>
-        <FormInput
-          inputProps={{ ...inputProps, name, onClick }}
-          hasDescription={!!description}
-        />
+        <FormInput inputProps={{ ...inputProps, name, onClick }} hasDescription={!!description} />
       </FormControl>
 
       {description && <FormDescription>{description}</FormDescription>}

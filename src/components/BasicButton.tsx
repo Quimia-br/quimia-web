@@ -1,10 +1,8 @@
 import type { ComponentProps, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "cn";
 
-interface BasicButtonProps extends Omit<
-  ComponentProps<typeof Button>,
-  "size" | "variant"
-> {
+interface BasicButtonProps extends Omit<ComponentProps<typeof Button>, "size" | "variant"> {
   icon?: ReactNode;
   variant?: "primary" | "secondary" | "critical";
   size?: "default" | "compact";
@@ -24,11 +22,14 @@ function BasicButton({
       type={type}
       variant={variant === "primary" ? "default" : variant}
       size={size === "compact" ? "basic-compact" : "basic"}
-      className={className}
+      className={cn("text-lg", className)}
       {...props}
     >
       {icon != null && (
-        <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center [&_svg]:size-full">
+        <span
+          aria-hidden="true"
+          className="inline-flex size-5 shrink-0 items-center justify-center [&_svg]:size-full"
+        >
           {icon}
         </span>
       )}

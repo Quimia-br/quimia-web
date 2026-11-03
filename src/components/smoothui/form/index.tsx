@@ -129,10 +129,7 @@ export default function Form({
 }: FormProps) {
   const [submitCount, setSubmitCount] = useState(0);
 
-  const ctxValue = useMemo(
-    () => ({ errors, submitCount }),
-    [errors, submitCount]
-  );
+  const ctxValue = useMemo(() => ({ errors, submitCount }), [errors, submitCount]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -141,18 +138,13 @@ export default function Form({
         onFormSubmit(e);
       }
     },
-    [onFormSubmit]
+    [onFormSubmit],
   );
 
   return (
     <LazyMotion features={domAnimation}>
       <FormContext.Provider value={ctxValue}>
-        <form
-          className={cn("grid gap-3", className)}
-          noValidate
-          onSubmit={handleSubmit}
-          {...props}
-        >
+        <form className={cn("grid gap-3", className)} noValidate onSubmit={handleSubmit} {...props}>
           {children}
         </form>
       </FormContext.Provider>
@@ -180,7 +172,7 @@ export function FormField({ name, className, children }: FormFieldProps) {
       name,
       submitCount,
     }),
-    [name, id, error, submitCount]
+    [name, id, error, submitCount],
   );
 
   return (
@@ -231,9 +223,7 @@ function FormFieldInner({
         className="grid gap-1.5"
         initial={false}
         transition={
-          shouldReduceMotion
-            ? DURATION_INSTANT
-            : { duration: 0.4, ease: [0.36, 0.07, 0.19, 0.97] }
+          shouldReduceMotion ? DURATION_INSTANT : { duration: 0.4, ease: [0.36, 0.07, 0.19, 0.97] }
         }
       >
         {children}
@@ -254,7 +244,7 @@ export function FormLabel({ className, children, ...props }: FormLabelProps) {
       className={cn(
         "font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
         error && "text-destructive",
-        className
+        className,
       )}
       data-slot="form-label"
       htmlFor={formItemId}
@@ -277,8 +267,7 @@ export function FormControl({
   className?: string;
 }) {
   const shouldReduceMotion = useReducedMotion();
-  const { formItemId, formDescriptionId, formMessageId, error } =
-    useFormFieldCtx();
+  const { formItemId, formDescriptionId, formMessageId, error } = useFormFieldCtx();
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -299,9 +288,7 @@ export function FormControl({
       transition={shouldReduceMotion ? DURATION_INSTANT : SPRING_SNAPPY}
     >
       {cloneChildWithA11y(children, {
-        "aria-describedby": error
-          ? `${formDescriptionId} ${formMessageId}`
-          : formDescriptionId,
+        "aria-describedby": error ? `${formDescriptionId} ${formMessageId}` : formDescriptionId,
         "aria-invalid": error ? true : undefined,
         id: formItemId,
       })}
@@ -311,7 +298,7 @@ export function FormControl({
 
 function cloneChildWithA11y(
   children: React.ReactNode,
-  a11yProps: Record<string, unknown>
+  a11yProps: Record<string, unknown>,
 ): React.ReactNode {
   const child = Array.isArray(children) ? children[0] : children;
   if (child && typeof child === "object" && "type" in child) {
@@ -326,11 +313,7 @@ function cloneChildWithA11y(
 // FormDescription
 // ---------------------------------------------------------------------------
 
-export function FormDescription({
-  className,
-  children,
-  ...props
-}: FormDescriptionProps) {
+export function FormDescription({ className, children, ...props }: FormDescriptionProps) {
   const { formDescriptionId } = useFormFieldCtx();
 
   return (
@@ -369,9 +352,7 @@ export function FormMessage({ className, children }: FormMessageProps) {
                 : { opacity: 0, y: -4 }
             }
             id={formMessageId}
-            initial={
-              shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: -4 }
-            }
+            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: -4 }}
             key={typeof body === "string" ? body : "message"}
             role="alert"
             transition={shouldReduceMotion ? DURATION_INSTANT : SPRING_DEFAULT}

@@ -3,3 +3,17 @@ trustPolicy: no-downgrade
 trustPolicyExclude:
   # Legacy transitive dependency of Babel; integrity is pinned in pnpm-lock.yaml.
   - semver@6.3.1
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.1.0
+  vitest: 5.0.3
+  vite-plus: 1.1.0
+overrides:
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: "*"
+    vitest: "*"

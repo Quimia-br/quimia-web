@@ -18,9 +18,7 @@ function CardHeader({ icon, title, description, className }: CardHeaderProps) {
       {icon}
       <hgroup className="flex flex-col flex-1 gap-1.5">
         <h2 className="text-2xl font-medium text-foreground">{title}</h2>
-        {description && (
-          <p className="text-lg text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-lg text-muted-foreground">{description}</p>}
       </hgroup>
     </div>
   );

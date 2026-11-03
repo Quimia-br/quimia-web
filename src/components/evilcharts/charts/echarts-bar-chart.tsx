@@ -1,5 +1,7 @@
 "use client";
 
+import { applyChartTypography, observeChartAppearance } from "@/lib/chart-typography";
+
 import {
   DEFAULT_ECHARTS_RENDERER,
   buildChartCss,
@@ -996,12 +998,12 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
 
         return tooltipRow({
           indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
+          rowKey: key,
           labelText,
           valueText: value,
           dimmed,
         });
-      })
-      .join("");
+      });
 
     return tooltipShell({
       label,
@@ -1292,7 +1294,7 @@ function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
             show: false,
             position: "top",
             color: resolved.tokens.foreground,
-            fontFamily: "var(--font-mono, monospace)",
+            fontFamily: "var(--app-chart-value-font, var(--font-mono, monospace))",
             fontSize: 11,
           }
         : undefined,
@@ -1621,7 +1623,19 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       isHorizontal,
     };
     live.dataLength = data.length;
-  }, [getLive, brushSlot, toggleSelection, clickableKeys, seriesKeys, hasStrippedBars, bars, stackType, barCategoryGap, isHorizontal, data.length]);
+  }, [
+    getLive,
+    brushSlot,
+    toggleSelection,
+    clickableKeys,
+    seriesKeys,
+    hasStrippedBars,
+    bars,
+    stackType,
+    barCategoryGap,
+    isHorizontal,
+    data.length,
+  ]);
 
   // The brush is meaningful only when the category axis is on x (vertical layout).
   const brushEnabled = showBrush && !isHorizontal;
@@ -1665,8 +1679,147 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     });
   }, [getLive]);
 
+  const buildOption = useBarChartOption({
+    getLive,
+    data,
+    config,
+    bars,
+    seriesKeys,
+    categoryKey,
+    animationType,
+    barRadius,
+    isHorizontal,
+    isStacked,
+    isPercent,
+    selectedDataKey,
+    hasSelection,
+    showGrid,
+    categorySlot,
+    valueSlot,
+    tooltipSlot,
+    legendSlot,
+    isLoading,
+    loadingBars,
+    brushEnabled,
+    brushHeight,
+    barGap,
+    barCategoryGap,
+    maxHighlightIndex,
+  });
+
+  useBarChartInstance({
+    renderer,
+    mountRef,
+    containerRef,
+    echartsRef,
+    getLive,
+    syncBrushOverlayNow,
+  });
+
+  useBarChartSync({
+    renderer,
+    echartsRef,
+    containerRef,
+    getLive,
+    buildOption,
+    chartOptions,
+    isLoading,
+    animation,
+    effectiveAnimation,
+    shouldReduceMotion,
+    config,
+    seriesKeys,
+    dataLength: data.length,
+    bars,
+    isHorizontal,
+    barCategoryGap,
+    syncBrushOverlayNow,
+  });
+
+  useBarChartDefaultTooltip({
+    renderer,
+    echartsRef,
+    tooltipSlot,
+    isLoading,
+    dataLength: data.length,
+    seriesKeysLength: seriesKeys.length,
+  });
+
+  useBarChartShimmer({ renderer, echartsRef, getLive, isLoading, loadingBars });
+
+  return (
+    <div
+      ref={containerRef}
+      data-chart={chartId}
+      className={`relative flex flex-col text-xs ${className ?? ""}`}
+    >
+      <style>{css}</style>
+
+      <div className="relative min-h-0 w-full flex-1">
+        <div ref={mountRef} className="h-full min-h-0 w-full" />
+      </div>
+
+      <BarChartOverlays
+        legendSlot={legendSlot}
+        seriesKeys={seriesKeys}
+        config={config}
+        selectedDataKey={selectedDataKey}
+        onToggle={toggleSelection}
+        isLoading={isLoading}
+        shouldReduceMotion={shouldReduceMotion}
+        brushEnabled={brushEnabled}
+        brushHeight={brushHeight}
+      />
+    </div>
+  );
+}
+
+type BarChartOptionParams = Omit<
+  OptionBuildContext,
+  | "resolved"
+  | "categories"
+  | "brushRange"
+  | "loadingData"
+  | "valuePxPerUnit"
+  | "barWidthPx"
+  | "expand"
+  | "showBrush"
+> & {
+  getLive: () => LiveState;
+  categoryKey: string;
+  loadingBars: number;
+  brushEnabled: boolean;
+};
+
+function useBarChartOption({
+  getLive,
+  data,
+  config,
+  bars,
+  seriesKeys,
+  categoryKey,
+  animationType,
+  barRadius,
+  isHorizontal,
+  isStacked,
+  isPercent,
+  selectedDataKey,
+  hasSelection,
+  showGrid,
+  categorySlot,
+  valueSlot,
+  tooltipSlot,
+  legendSlot,
+  isLoading,
+  loadingBars,
+  brushEnabled,
+  brushHeight,
+  barGap,
+  barCategoryGap,
+  maxHighlightIndex,
+}: BarChartOptionParams) {
   // ── Option builder ─────────────────────────────────────────────────────────
-  const buildOption = useCallback((): EChartsOption => {
+  return useCallback((): EChartsOption => {
     const live = getLive();
     const resolved = live.resolved;
     if (!resolved) return {};
@@ -1751,50 +1904,6 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     barCategoryGap,
     maxHighlightIndex,
   ]);
-
-  useBarChartInstance({
-    renderer, mountRef, containerRef, echartsRef, getLive, syncBrushOverlayNow,
-  });
-
-  useBarChartSync({
-    renderer, echartsRef, containerRef, getLive, buildOption, chartOptions,
-    isLoading, animation, effectiveAnimation, shouldReduceMotion, config,
-    seriesKeys, dataLength: data.length, bars, isHorizontal, barCategoryGap,
-    syncBrushOverlayNow,
-  });
-
-  useBarChartDefaultTooltip({
-    renderer, echartsRef, tooltipSlot, isLoading,
-    dataLength: data.length, seriesKeysLength: seriesKeys.length,
-  });
-
-  useBarChartShimmer({ renderer, echartsRef, getLive, isLoading, loadingBars });
-
-  return (
-    <div
-      ref={containerRef}
-      data-chart={chartId}
-      className={`relative flex flex-col text-xs ${className ?? ""}`}
-    >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
-
-      <div className="relative min-h-0 w-full flex-1">
-        <div ref={mountRef} className="h-full min-h-0 w-full" />
-      </div>
-
-      <BarChartOverlays
-        legendSlot={legendSlot}
-        seriesKeys={seriesKeys}
-        config={config}
-        selectedDataKey={selectedDataKey}
-        onToggle={toggleSelection}
-        isLoading={isLoading}
-        shouldReduceMotion={shouldReduceMotion}
-        brushEnabled={brushEnabled}
-        brushHeight={brushHeight}
-      />
-    </div>
-  );
 }
 
 type BarChartOverlaysProps = {
@@ -1810,8 +1919,15 @@ type BarChartOverlaysProps = {
 };
 
 function BarChartOverlays({
-  legendSlot, seriesKeys, config, selectedDataKey, onToggle,
-  isLoading, shouldReduceMotion, brushEnabled, brushHeight,
+  legendSlot,
+  seriesKeys,
+  config,
+  selectedDataKey,
+  onToggle,
+  isLoading,
+  shouldReduceMotion,
+  brushEnabled,
+  brushHeight,
 }: BarChartOverlaysProps) {
   // Insets match the Recharts legend's breathing room inside the plot frame.
   const legendStyle: CSSProperties = {
@@ -1872,7 +1988,12 @@ type BarChartInstanceParams = {
 };
 
 function useBarChartInstance({
-  renderer, mountRef, containerRef, echartsRef, getLive, syncBrushOverlayNow,
+  renderer,
+  mountRef,
+  containerRef,
+  echartsRef,
+  getLive,
+  syncBrushOverlayNow,
 }: BarChartInstanceParams) {
   // ── Init + resize + theme observer (per renderer instance) ──────────────────
   useEffect(() => {
@@ -1897,12 +2018,8 @@ function useBarChartInstance({
     resizeObserver.observe(mount);
 
     // Light/dark flips change no React state — re-resolve and push directly.
-    const themeObserver = new MutationObserver(() => {
+    const themeObserver = observeChartAppearance(() => {
       live.repush();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
     });
 
     // Expandable hover, driven by the pointer's COLUMN rather than the bar element.
@@ -1940,7 +2057,8 @@ function useBarChartInstance({
       // Bar clicks carry seriesId; keep the seriesIndex fallback for safety. Main
       // series come first in the series array, so the index maps directly.
       const id =
-        params.seriesId ?? (typeof params.seriesIndex === "number" ? keys[params.seriesIndex] : undefined);
+        params.seriesId ??
+        (typeof params.seriesIndex === "number" ? keys[params.seriesIndex] : undefined);
       if (typeof id === "string" && clickable.has(id)) live.handlers.toggleSelection(id);
     };
     chart.on("click", onChartClick);
@@ -2044,7 +2162,6 @@ function useBarChartInstance({
       live.hasRevealed = false;
     };
   }, [renderer, mountRef, containerRef, echartsRef, getLive, syncBrushOverlayNow]);
-
 }
 
 type BarChartSyncParams = {
@@ -2068,9 +2185,22 @@ type BarChartSyncParams = {
 };
 
 function useBarChartSync({
-  renderer, echartsRef, containerRef, getLive, buildOption, chartOptions,
-  isLoading, animation, effectiveAnimation, shouldReduceMotion, config,
-  seriesKeys, dataLength, bars, isHorizontal, barCategoryGap,
+  renderer,
+  echartsRef,
+  containerRef,
+  getLive,
+  buildOption,
+  chartOptions,
+  isLoading,
+  animation,
+  effectiveAnimation,
+  shouldReduceMotion,
+  config,
+  seriesKeys,
+  dataLength,
+  bars,
+  isHorizontal,
+  barCategoryGap,
   syncBrushOverlayNow,
 }: BarChartSyncParams) {
   // ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
@@ -2103,7 +2233,9 @@ function useBarChartSync({
         });
         // chartOptions is an untyped escape hatch — the spread erases the option's
         // shape, so re-assert it. The only cast in the file.
-        chart.setOption(merged as EChartsOption, { notMerge: true });
+        chart.setOption(applyChartTypography(merged, container) as EChartsOption, {
+          notMerge: true,
+        });
       };
 
       apply();
@@ -2258,7 +2390,6 @@ function useBarChartSync({
     echartsRef,
     containerRef,
   ]);
-
 }
 
 type BarChartDefaultTooltipParams = {
@@ -2271,7 +2402,12 @@ type BarChartDefaultTooltipParams = {
 };
 
 function useBarChartDefaultTooltip({
-  renderer, echartsRef, tooltipSlot, isLoading, dataLength, seriesKeysLength,
+  renderer,
+  echartsRef,
+  tooltipSlot,
+  isLoading,
+  dataLength,
+  seriesKeysLength,
 }: BarChartDefaultTooltipParams) {
   // ── Default tooltip — show the tooltip at `defaultIndex` with no hover ────────
   // Recharts' `defaultIndex` keeps a tooltip open on load; ECharts has no static
@@ -2293,7 +2429,6 @@ function useBarChartDefaultTooltip({
     seriesKeysLength,
     echartsRef,
   ]);
-
 }
 
 type BarChartShimmerParams = {
@@ -2305,7 +2440,11 @@ type BarChartShimmerParams = {
 };
 
 function useBarChartShimmer({
-  renderer, echartsRef, getLive, isLoading, loadingBars,
+  renderer,
+  echartsRef,
+  getLive,
+  isLoading,
+  loadingBars,
 }: BarChartShimmerParams) {
   // ── Loading shimmer — rAF sweeps a bright band across the gray bars ──────────
   useEffect(() => {
@@ -2348,7 +2487,15 @@ function useBarChartShimmer({
         true,
       );
       chart.setOption(
-        { series: [{ id: "__loading", data: ensureLoadingData(live, loadingBars), itemStyle: { color: fill } }] },
+        {
+          series: [
+            {
+              id: "__loading",
+              data: ensureLoadingData(live, loadingBars),
+              itemStyle: { color: fill },
+            },
+          ],
+        },
         { silent: true, lazyUpdate: true },
       );
       raf = requestAnimationFrame(tick);
@@ -2356,7 +2503,6 @@ function useBarChartShimmer({
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [renderer, echartsRef, getLive, isLoading, loadingBars]);
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

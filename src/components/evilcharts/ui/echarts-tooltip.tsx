@@ -1,3 +1,5 @@
+import type { ReactElement, ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { indicatorBackground, type ResolvedColors } from "@/components/evilcharts/ui/echarts-chart";
 import type { TooltipComponentOption } from "echarts/components";
 
@@ -30,50 +32,37 @@ export const tooltipVariantClass: Record<TooltipVariant, string> = {
 // The standard series indicator swatch — a rounded square filled with the
 // series' solid var or multi-stop gradient (indicatorBackground). A chart drops
 // this into a tooltipRow's `indicatorHtml`.
-export function tooltipIndicatorHtml(key: string, colorsCount: number): string {
-  return `<div class="h-2.5 w-2.5 shrink-0 rounded-[2px]" style="background:${indicatorBackground(key, colorsCount)}"></div>`;
+export function tooltipIndicatorHtml(key: string, colorsCount: number): ReactElement {
+  return <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ background: indicatorBackground(key, colorsCount) }} />;
 }
-
-// One tooltip row: indicator swatch + label/value pair. `dimmed` is a class
-// fragment (e.g. " opacity-30") appended to the row so the selection/hover dim
-// stays byte-identical to the inlined markup.
-export function tooltipRow({
-  indicatorHtml,
-  labelText,
-  valueText,
-  dimmed,
-}: {
-  indicatorHtml: string;
+interface TooltipRowProps {
+  indicatorHtml: ReactNode;
   labelText: string;
   valueText: string;
   dimmed: string;
-}): string {
-  return `<div class="flex w-full flex-wrap items-center gap-2${dimmed}">
-          ${indicatorHtml}
-          <div class="flex flex-1 items-center justify-between gap-4 leading-none">
-            <span class="text-muted-foreground">${labelText}</span>
-            <span class="text-foreground font-mono font-medium tabular-nums">${valueText}</span>
-          </div>
-        </div>`;
+  rowKey?: string;
 }
-
-// The outer tooltip surface — border, padding, shadow, roundness + variant
-// classes — wrapping the axis label and the composed rows.
-export function tooltipShell({
-  label,
-  body,
-  roundness,
-  variant,
-}: {
+/** External labels and values enter JSX text nodes. React escapes markup for ECharts. */
+export function tooltipRow({ indicatorHtml, labelText, valueText, dimmed, rowKey }: TooltipRowProps): ReactElement {
+  return <div key={rowKey ?? labelText} className={"flex w-full flex-wrap items-center gap-2" + dimmed}>
+    {indicatorHtml}
+    <div className="flex flex-1 items-center justify-between gap-4 leading-none">
+      <span className="text-muted-foreground">{labelText}</span>
+      <span className="text-foreground font-mono font-medium tabular-nums">{valueText}</span>
+    </div>
+  </div>;
+}
+interface TooltipShellProps {
   label: string;
-  body: string;
+  body: ReactNode;
   roundness: TooltipRoundness;
   variant: TooltipVariant;
-}): string {
-  return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[roundness]} ${tooltipVariantClass[variant]}">
-      <div class="font-medium text-primary">${label}</div>
-      <div class="grid gap-1.5">${body}</div>
-    </div>`;
+}
+export function tooltipShell({ label, body, roundness, variant }: TooltipShellProps): string {
+  return renderToStaticMarkup(<div className={"grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl " + roundnessClass[roundness] + " " + tooltipVariantClass[variant]}>
+    {label && <div className="font-medium text-foreground">{label}</div>}
+    <div className="grid gap-1.5">{body}</div>
+  </div>);
 }
 
 // Maps the TooltipPosition prop onto the ECharts tooltip `position` field.
