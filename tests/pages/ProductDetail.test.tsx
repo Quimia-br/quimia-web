@@ -42,7 +42,14 @@ function setup(id = "42") {
   return render(
     <QueryClientProvider client={client}>
       <AuthContext
-        value={{ user: null, isAuthenticated: false, canRefresh: false, sessionVersion: 0, isCurrentSession: version => version === 0, isCurrentCompany: companyId => companyId === null }}
+        value={{
+          user: null,
+          isAuthenticated: false,
+          canRefresh: false,
+          sessionVersion: 0,
+          isCurrentSession: (version) => version === 0,
+          isCurrentCompany: (companyId) => companyId === null,
+        }}
       >
         <ThemeProvider defaultTheme="light">
           <MemoryRouter initialEntries={[`/products/${id}`]}>
@@ -66,10 +73,13 @@ describe("Product details", () => {
   it("aborts the pending query when its last consumer unmounts", async () => {
     let aborted = false;
     let started = false;
-    api.defaults.adapter = config => new Promise(() => {
-      started = true;
-      config.signal?.addEventListener?.("abort", () => { aborted = true; });
-    });
+    api.defaults.adapter = (config) =>
+      new Promise(() => {
+        started = true;
+        config.signal?.addEventListener?.("abort", () => {
+          aborted = true;
+        });
+      });
     const view = setup();
     await waitFor(() => expect(started).toBe(true));
     view.unmount();

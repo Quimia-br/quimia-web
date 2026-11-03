@@ -3,7 +3,9 @@ import { NavLink } from "react-router-dom";
 import { cn } from "cn";
 import ProfileAvatar from "./ProfileAvatar";
 
-interface ProfileContainerProps { onNavigate?: () => void }
+interface ProfileContainerProps {
+  onNavigate?: () => void;
+}
 
 function ProfileContainer({ onNavigate }: ProfileContainerProps) {
   return (

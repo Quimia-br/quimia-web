@@ -5,7 +5,7 @@ import { useAuth } from "./use-auth";
 import { useUpdateProfile } from "./use-update-profile";
 import { useToast } from "./use-toast";
 import { ProfilePhotoError } from "@/lib/profile-photo-error";
-import { profileEditorSchema } from "@/utils/validation-empresa";
+import { profileEditorSchema } from "@/lib/utils/validation-empresa";
 import type { EmpresaMe, UpdateProfile } from "@/types/Empresa";
 
 export const PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
@@ -24,11 +24,16 @@ function errorMessage(error: unknown): { email?: string; message: string } {
       };
     }
     if (error.code === "ERR_BAD_RESPONSE" && error.response?.status === 200) {
-      return { message: "Não foi possível confirmar o envio da foto. Tente novamente mais tarde." };
+      return {
+        message: "Não foi possível confirmar o envio da foto. Tente novamente mais tarde.",
+      };
     }
     const code = error.response?.data?.detail;
     if (code === "email_in_use")
-      return { email: "Este e-mail já está em uso.", message: "Confira o e-mail informado." };
+      return {
+        email: "Este e-mail já está em uso.",
+        message: "Confira o e-mail informado.",
+      };
     if (error.response?.status === 415 && code !== "imagem_invalida") {
       return {
         message:
@@ -44,7 +49,9 @@ function errorMessage(error: unknown): { email?: string; message: string } {
     };
     if (code && messages[code]) return { message: messages[code] };
   }
-  return { message: "Não foi possível alterar o perfil. Verifique sua conexão e tente novamente." };
+  return {
+    message: "Não foi possível alterar o perfil. Verifique sua conexão e tente novamente.",
+  };
 }
 
 export function useProfileEditorDialog(profile: EmpresaMe) {
@@ -77,7 +84,10 @@ interface ProfileEditorOptions {
 
 export function useProfileEditor({ profile, onSavingChange, onSaved }: ProfileEditorOptions) {
   const saving = useRef(false);
-  const [values, setValues] = useState({ nome: profile.nome, email: profile.email });
+  const [values, setValues] = useState({
+    nome: profile.nome,
+    email: profile.email,
+  });
   const [image, setImage] = useState<File | null>(null);
   const [imageError, setImageError] = useState<string>();
   const [touched, setTouched] = useState({ nome: false, email: false });

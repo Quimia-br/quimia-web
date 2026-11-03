@@ -1,4 +1,4 @@
-import { preferenceSchema, readStoredValue } from "@/utils/storage";
+import { preferenceSchema, readStoredValue } from "@/lib/utils/storage";
 
 /** Resolve the saved appearance before mounting React. ThemeProvider owns later changes. */
 export function initializeTheme() {

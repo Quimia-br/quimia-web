@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { parseProductId } from "@/utils/route-params";
+import { parseProductId } from "@/lib/utils/route-params";
 
 describe("product route parameter", () => {
   it.each([undefined, "", "0", "-1", "1.2", "01", "1e2", "abc", "2147483648"])(

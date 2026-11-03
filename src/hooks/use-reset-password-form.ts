@@ -3,7 +3,7 @@ import axios from "axios";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import { resetPassword } from "@/services/auth";
-import { AUTH_FIELD_LIMITS, newPasswordSchema } from "@/utils/validation-auth";
+import { AUTH_FIELD_LIMITS, newPasswordSchema } from "@/lib/utils/validation-auth";
 import type { SyntheticEvent } from "react";
 
 const passwordMessage = "Use pelo menos 8 caracteres, uma letra e um número.";
@@ -22,12 +22,21 @@ export function useResetPasswordForm(token: string, onError: (invalid: boolean) 
   const form = useForm({
     defaultValues: { password: "", confirmation: "" },
     validators: { onDynamic: schema },
-    validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
+    validationLogic: revalidateLogic({
+      mode: "submit",
+      modeAfterSubmission: "change",
+    }),
     onSubmit: async ({ value }) => {
       try {
         const validated = schema.parse(value);
-        await resetPassword({ resetToken: token, novaSenha: validated.password });
-        navigate("/reset-password/success", { replace: true, state: { passwordReset: true } });
+        await resetPassword({
+          resetToken: token,
+          novaSenha: validated.password,
+        });
+        navigate("/reset-password/success", {
+          replace: true,
+          state: { passwordReset: true },
+        });
       } catch (error) {
         const detail = axios.isAxiosError<{ detail?: unknown }>(error)
           ? error.response?.data?.detail

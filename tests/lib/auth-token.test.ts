@@ -107,7 +107,13 @@ describe("authentication session lifecycle", () => {
 
   it("migrates legacy identity storage and discards persisted credentials", async () => {
     resetMemory();
-    localStorage.setItem("quimia:auth-storage", JSON.stringify({ state: { user: empresa, isAuthenticated: true, accessToken: "must-not-restore" }, version: 0 }));
+    localStorage.setItem(
+      "quimia:auth-storage",
+      JSON.stringify({
+        state: { user: empresa, isAuthenticated: true, accessToken: "must-not-restore" },
+        version: 0,
+      }),
+    );
     await useAuthStore.persist.rehydrate();
     expect(useAuthStore.getState().user).toEqual(empresa);
     expect(useAuthStore.getState().accessToken).toBeNull();
@@ -117,7 +123,10 @@ describe("authentication session lifecycle", () => {
 
   it("discards unknown future identity versions instead of trusting authentication", async () => {
     resetMemory();
-    localStorage.setItem("quimia:auth-storage", JSON.stringify({ _versao: 99, dados: { user: empresa, isAuthenticated: true } }));
+    localStorage.setItem(
+      "quimia:auth-storage",
+      JSON.stringify({ _versao: 99, dados: { user: empresa, isAuthenticated: true } }),
+    );
     await useAuthStore.persist.rehydrate();
     expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);

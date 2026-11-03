@@ -3,7 +3,7 @@ import {
   readStoredValue,
   writeStoredValue,
   type StorageSchema,
-} from "@/utils/storage";
+} from "@/lib/utils/storage";
 
 export const TEXT_SCALES = [100, 125, 150, 175, 200] as const;
 export type TextScale = (typeof TEXT_SCALES)[number];
@@ -55,7 +55,9 @@ const accessibilitySchema: StorageSchema<AccessibilityPreferences> = {
 };
 
 export function readAccessibility(): AccessibilityPreferences {
-  return readStoredValue(ACCESSIBILITY_KEY, accessibilitySchema, { ...DEFAULT_ACCESSIBILITY });
+  return readStoredValue(ACCESSIBILITY_KEY, accessibilitySchema, {
+    ...DEFAULT_ACCESSIBILITY,
+  });
 }
 
 export function writeAccessibility(preferences: AccessibilityPreferences): void {

@@ -45,14 +45,25 @@ function Menu() {
         <SidebarGroup className="p-0">
           <SidebarMenu className="flex flex-col items-stretch gap-[30px] md:gap-6 [&>li]:gap-2 md:[&>li]:gap-0">
             {links.map((link) => (
-              <ShapeIcon key={link.to} {...link} onClick={() => { if (isMobile) setOpenMobile(false); }} className="h-[90px] w-full md:size-18" />
+              <ShapeIcon
+                key={link.to}
+                {...link}
+                onClick={() => {
+                  if (isMobile) setOpenMobile(false);
+                }}
+                className="h-[90px] w-full md:size-18"
+              />
             ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="mt-auto p-0 md:p-2 [&_a]:w-full [&_a]:h-[74px] md:[&_a]:h-16">
         <SidebarMenu>
-          <ProfileContainer onNavigate={() => { if (isMobile) setOpenMobile(false); }} />
+          <ProfileContainer
+            onNavigate={() => {
+              if (isMobile) setOpenMobile(false);
+            }}
+          />
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

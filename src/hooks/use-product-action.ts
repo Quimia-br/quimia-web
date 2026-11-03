@@ -7,7 +7,7 @@ import { getTypes, remove, update } from "@/services/produto";
 import type { AlteracaoProdutoForm } from "@/types/Produto";
 import type { ProductFields as Fields } from "@/types/ProductRegistration";
 import type { ProductAction } from "@/components/ProductActionDialog";
-import { productActionFormSchema } from "@/utils/product-form-validation";
+import { productActionFormSchema } from "@/lib/utils/product-form-validation";
 
 const fieldNames = ["nome", "tipo", "descricao", "codBarras"] as const;
 interface ProductActionOptions {
@@ -64,7 +64,9 @@ export function useProductAction({ action, onClose }: ProductActionOptions) {
     onSuccess: () => {
       if (!isCurrentSession(sessionVersion)) return;
       void client.invalidateQueries({ queryKey: ["products", sessionVersion] });
-      void client.invalidateQueries({ queryKey: ["product-detail", sessionVersion, product.id] });
+      void client.invalidateQueries({
+        queryKey: ["product-detail", sessionVersion, product.id],
+      });
       toast.add({
         type: "success",
         title: editing ? "Produto atualizado com sucesso!" : "Produto excluído com sucesso!",

@@ -4,11 +4,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useLogin } from "@/hooks/use-login";
 import { loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
-import { AUTH_FIELD_LIMITS, loginSchema } from "@/utils/validation-auth";
+import { AUTH_FIELD_LIMITS, loginSchema } from "@/lib/utils/validation-auth";
 import type { SyntheticEvent } from "react";
 
 const STORAGE_KEY = "quimia:login-draft";
-const formSchema = z.object({ email: loginSchema.shape.email, password: loginSchema.shape.senha });
+const formSchema = z.object({
+  email: loginSchema.shape.email,
+  password: loginSchema.shape.senha,
+});
 const returnLocationSchema = z.object({
   from: z.object({
     pathname: z.string(),
@@ -16,7 +19,9 @@ const returnLocationSchema = z.object({
     hash: z.string().optional(),
   }),
 });
-const selectLoginDraft = (values: { email: string; password: string }) => ({ email: values.email });
+const selectLoginDraft = (values: { email: string; password: string }) => ({
+  email: values.email,
+});
 
 function loginErrorMessage(error: unknown): string {
   if (axios.isAxiosError<{ detail?: unknown }>(error)) {
@@ -42,10 +47,16 @@ export function useLoginForm() {
   const form = useForm({
     defaultValues: loadFormDraft(STORAGE_KEY, { email: "", password: "" }),
     validators: { onDynamic: formSchema },
-    validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
+    validationLogic: revalidateLogic({
+      mode: "submit",
+      modeAfterSubmission: "change",
+    }),
     onSubmit: async ({ value }) => {
       const normalized = formSchema.parse(value);
-      await login.mutateAsync({ email: normalized.email, senha: normalized.password });
+      await login.mutateAsync({
+        email: normalized.email,
+        senha: normalized.password,
+      });
       const route = returnLocationSchema.safeParse(location.state as unknown);
       const from = route.success ? route.data.from : undefined;
       const destination =

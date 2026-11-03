@@ -1,8 +1,8 @@
 import { api, restoreAccessToken } from "@/services/api";
 import type { UpdateEmpresa, EmpresaMe, UpdateProfile } from "@/types/Empresa";
 import { z } from "zod";
-import { validateUpdateEmpresa } from "@/utils/validation-empresa";
-import { validateImage } from "@/utils/validation-files";
+import { validateUpdateEmpresa } from "@/lib/utils/validation-empresa";
+import { validateImage } from "@/lib/utils/validation-files";
 import { normalizeServiceError, parseResponse } from "./errors";
 
 const path = "/empresas";
@@ -14,7 +14,9 @@ const profileResponseSchema = z.object({
   fotoUrl: z.string().nullable(),
   ativo: z.boolean(),
 });
-const photoResponseSchema = z.object({ fotoUrl: z.url({ protocol: /^https$/ }) });
+const photoResponseSchema = z.object({
+  fotoUrl: z.url({ protocol: /^https$/ }),
+});
 
 export async function getMe(signal?: AbortSignal): Promise<EmpresaMe> {
   try {

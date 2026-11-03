@@ -14,14 +14,14 @@ Este documento relaciona as decisões do projeto aos critérios da avaliação i
 
 A aplicação usa Vite, React e TypeScript com modo `strict`. O código de `src/` usa `.ts` e `.tsx`; estilos, fontes e mídia têm diretórios próprios. A organização divide as responsabilidades da seguinte forma:
 
-| Local | Responsabilidade |
-|---|---|
-| `src/components/` | Apresentação, controles, composição visual e interações de foco. |
-| `src/pages/` | Composição das telas e interpretação dos parâmetros de rota. |
-| `src/hooks/` | Coordenação de estado, regras dos fluxos e operações assíncronas. |
-| `src/services/` | Transporte HTTP, autenticação remota e contratos dos recursos. |
-| `src/types/` | Entidades e contratos compartilhados por domínio. |
-| `src/utils/` | Validação, normalização, persistência e funções puras. |
+| Local             | Responsabilidade                                                  |
+| ----------------- | ----------------------------------------------------------------- |
+| `src/components/` | Apresentação, controles, composição visual e interações de foco.  |
+| `src/pages/`      | Composição das telas e interpretação dos parâmetros de rota.      |
+| `src/hooks/`      | Coordenação de estado, regras dos fluxos e operações assíncronas. |
+| `src/services/`   | Transporte HTTP, autenticação remota e contratos dos recursos.    |
+| `src/types/`      | Entidades e contratos compartilhados por domínio.                 |
+| `src/utils/`      | Validação, normalização, persistência e funções puras.            |
 
 `BasicButton`, `TextField`, `CardHeader`, `ProductImage`, `PageIndicator` e `FeedbackItem` são exemplos de componentes com responsabilidades delimitadas. Os formulários consomem hooks como `useSignupForm`, `useLoginForm` e `useProfileEditor`; o cadastro de produtos usa `useProductCreateSession`, `useProductCreateForm` e `useFdsFlow`. A UI não importa serviços para realizar requisições.
 

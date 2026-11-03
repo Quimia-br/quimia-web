@@ -4,12 +4,20 @@ import { api } from "@/services/api";
 import { forgotPassword, login, register, resetPassword } from "@/services/auth";
 import { updateMe, uploadProfilePhoto } from "@/services/empresas";
 import * as produtos from "@/services/produto";
-import { validateImage, validatePdf } from "@/utils/validation-files";
-import { validateRegister, validateResetPassword, validateLogin } from "@/utils/validation-auth";
+import { validateImage, validatePdf } from "@/lib/utils/validation-files";
+import {
+  validateRegister,
+  validateResetPassword,
+  validateLogin,
+} from "@/lib/utils/validation-auth";
 
 const originalAdapter = api.defaults.adapter;
 const empresa = { id: 1, nome: "Empresa", email: "empresa@example.com" };
-const registration = { ...empresa, cnpj: "11.222.333/0001-81", senha: "SenhaValida2026" };
+const registration = {
+  ...empresa,
+  cnpj: "11.222.333/0001-81",
+  senha: "SenhaValida2026",
+};
 const produto = {
   id: 1,
   nome: "Produto",
@@ -36,12 +44,17 @@ describe("validation before transport", () => {
     expect(validateLogin({ email: empresa.email, senha: "a".repeat(72) }).senha).toHaveLength(72);
     expect(() => validateLogin({ email: empresa.email, senha: "a".repeat(73) })).toThrow();
     expect(() =>
-      validateResetPassword({ resetToken: "x".repeat(2049), novaSenha: registration.senha }),
+      validateResetPassword({
+        resetToken: "x".repeat(2049),
+        novaSenha: registration.senha,
+      }),
     ).toThrow();
   });
   it("validates bytes rather than rejecting legitimate files by MIME or filename", async () => {
     const pdf = new File(["%PDF-1.7"], "unknown.bin", { type: "text/plain" });
-    const image = new File(["RIFFxxxxWEBP"], "unknown.bin", { type: "application/octet-stream" });
+    const image = new File(["RIFFxxxxWEBP"], "unknown.bin", {
+      type: "application/octet-stream",
+    });
     await expect(validatePdf(pdf)).resolves.toBe(pdf);
     await expect(validateImage(image)).resolves.toBe(image);
     await expect(
@@ -68,11 +81,20 @@ describe("validation before transport", () => {
     () => resetPassword({ resetToken: "", novaSenha: "SenhaValida2026" }),
     () => updateMe({ nome: "Empresa\u0000" }),
     () => produtos.create({ nome: "Produto", tipo: "x".repeat(51) }),
-    () => produtos.create({ nome: "Produto", tipo: "outro", descricao: "x".repeat(4001) }),
+    () =>
+      produtos.create({
+        nome: "Produto",
+        tipo: "outro",
+        descricao: "x".repeat(4001),
+      }),
     () => produtos.analyzeFds(new File(["text"], "arquivo.txt", { type: "text/plain" })),
     () => uploadProfilePhoto(new File(["invalid"], "fake.png", { type: "image/png" })),
     () =>
-      produtos.create({ nome: "Produto", tipo: "outro", fds: new File(["invalid"], "fake.pdf") }),
+      produtos.create({
+        nome: "Produto",
+        tipo: "outro",
+        fds: new File(["invalid"], "fake.pdf"),
+      }),
     () => produtos.update(1, { imagem: new File(["invalid"], "fake.webp") }),
     () =>
       produtos.create({
@@ -118,7 +140,12 @@ describe("validation before transport", () => {
       expect(JSON.parse(config.data).senha).toBe(" x ");
       return {
         config,
-        data: { accessToken: "token", tokenType: "Bearer", expiresIn: 3600, empresa },
+        data: {
+          accessToken: "token",
+          tokenType: "Bearer",
+          expiresIn: 3600,
+          empresa,
+        },
         status: 200,
         statusText: "OK",
         headers: new AxiosHeaders(),
@@ -167,7 +194,13 @@ describe("product detail boundary", () => {
     api.defaults.adapter = async (config) => {
       expect(config.url).toBe("/produtos/1");
       expect(config.signal).toBe(signal);
-      return { config, data: produto, status: 200, statusText: "OK", headers: new AxiosHeaders() };
+      return {
+        config,
+        data: produto,
+        status: 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+      };
     };
     await expect(produtos.getById(1, signal)).resolves.toEqual(produto);
   });
@@ -181,7 +214,9 @@ describe("product detail boundary", () => {
         statusText: "OK",
         headers: new AxiosHeaders(),
       });
-      await expect(produtos.getById(1)).rejects.toMatchObject({ code: "ERR_BAD_RESPONSE" });
+      await expect(produtos.getById(1)).rejects.toMatchObject({
+        code: "ERR_BAD_RESPONSE",
+      });
     },
   );
   it("preserves abort semantics", async () => {

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { clearFormDraft, loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
 import { register as registerCompany } from "@/services/auth";
 import { formatCNPJ } from "@/lib/utils/formatCnpj";
-import { AUTH_FIELD_LIMITS, registerSchema } from "@/utils/validation-auth";
+import { AUTH_FIELD_LIMITS, registerSchema } from "@/lib/utils/validation-auth";
 import type { RegisterRequest } from "@/types/AuthState";
 import type { SyntheticEvent } from "react";
 
@@ -17,7 +17,10 @@ const registrationErrors: Record<string, { field: "email" | "cnpj" | "senha"; me
     field: "senha",
     message: "Use uma senha com pelo menos 8 caracteres, uma letra e um número.",
   },
-  password_too_long: { field: "senha", message: "A senha deve ter no máximo 72 bytes." },
+  password_too_long: {
+    field: "senha",
+    message: "A senha deve ter no máximo 72 bytes.",
+  },
 };
 const selectSignupDraft = (values: RegisterRequest) => ({
   nome: values.nome,
@@ -28,9 +31,17 @@ const selectSignupDraft = (values: RegisterRequest) => ({
 export function useSignupForm() {
   const navigate = useNavigate();
   const form = useForm({
-    defaultValues: loadFormDraft(STORAGE_KEY, { nome: "", cnpj: "", email: "", senha: "" }),
+    defaultValues: loadFormDraft(STORAGE_KEY, {
+      nome: "",
+      cnpj: "",
+      email: "",
+      senha: "",
+    }),
     validators: { onDynamic: registerSchema },
-    validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
+    validationLogic: revalidateLogic({
+      mode: "submit",
+      modeAfterSubmission: "change",
+    }),
     onSubmit: async ({ value }) => {
       try {
         await registerCompany(registerSchema.parse(value));

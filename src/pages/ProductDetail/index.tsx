@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import { isAxiosError } from "axios";
-import { parseProductId } from "@/utils/route-params";
+import { parseProductId } from "@/lib/utils/route-params";
 import { useProductDetail } from "@/hooks/use-product-detail";
 import Header from "@/components/Header";
 import LinkButton from "@/components/LinkButton";

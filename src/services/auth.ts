@@ -2,14 +2,22 @@ import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { CanceledError } from "axios";
 import { z } from "zod";
-import { validateLogin, validateRegister, validateResetPassword } from "@/utils/validation-auth";
-import { emailSchema, positiveIdSchema } from "@/utils/validation";
+import {
+  validateLogin,
+  validateRegister,
+  validateResetPassword,
+} from "@/lib/utils/validation-auth";
+import { emailSchema, positiveIdSchema } from "@/lib/utils/validation";
 import { normalizeServiceError, parseResponse } from "./errors";
 import type { EmpresaSummary } from "@/types/Empresa";
 import type { LoginCredentials, RegisterRequest, ResetPasswordData } from "@/types/AuthState";
 
 const path = "/empresas/auth";
-const empresaSchema = z.object({ id: positiveIdSchema, nome: z.string().min(1), email: z.email() });
+const empresaSchema = z.object({
+  id: positiveIdSchema,
+  nome: z.string().min(1),
+  email: z.email(),
+});
 const loginResponseSchema = z.object({
   accessToken: z.string().min(1),
   tokenType: z.literal("Bearer"),
@@ -54,7 +62,9 @@ export async function logout(): Promise<void> {
 
 export async function forgotPassword(email: string): Promise<void> {
   try {
-    await api.post(`${path}/forgot-password`, { email: emailSchema.parse(email) });
+    await api.post(`${path}/forgot-password`, {
+      email: emailSchema.parse(email),
+    });
   } catch (cause) {
     throw normalizeServiceError(cause, "auth.forgotPassword");
   }

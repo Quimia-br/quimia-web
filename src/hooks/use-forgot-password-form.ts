@@ -2,8 +2,8 @@ import { useState, type SyntheticEvent } from "react";
 import { revalidateLogic, useForm, useSelector } from "@tanstack/react-form";
 import { z } from "zod";
 import { forgotPassword } from "@/services/auth";
-import { emailSchema } from "@/utils/validation";
-import { AUTH_FIELD_LIMITS } from "@/utils/validation-auth";
+import { emailSchema } from "@/lib/utils/validation";
+import { AUTH_FIELD_LIMITS } from "@/lib/utils/validation-auth";
 
 const schema = z.object({ email: emailSchema });
 
@@ -12,7 +12,10 @@ export function useForgotPasswordForm(onError: () => void) {
   const form = useForm({
     defaultValues: { email: "" },
     validators: { onDynamic: schema },
-    validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
+    validationLogic: revalidateLogic({
+      mode: "submit",
+      modeAfterSubmission: "change",
+    }),
     onSubmit: async ({ value }) => {
       try {
         const normalized = schema.parse(value);

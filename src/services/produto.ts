@@ -9,8 +9,8 @@ import {
   validateProdutoSearch,
   validateProductId,
   validateProdutoFiles,
-} from "@/utils/validation-produto";
-import { validatePdf } from "@/utils/validation-files";
+} from "@/lib/utils/validation-produto";
+import { validatePdf } from "@/lib/utils/validation-files";
 import { fdsAnalysisJobSchema } from "@/lib/fds-analysis";
 import { useAuthStore } from "@/lib/auth-token";
 import type { Pagina } from "@/types/Pagina";
@@ -139,7 +139,10 @@ export async function analyzeFds(
     if (analiseAnterior !== undefined)
       form.append("analiseAnterior", analysisIdSchema.parse(analiseAnterior));
     const jobPath = `${path}/fds/analises/assincronas`;
-    let response = await api.post<unknown>(jobPath, form, { ...multipartConfig, signal });
+    let response = await api.post<unknown>(jobPath, form, {
+      ...multipartConfig,
+      signal,
+    });
     const deadline = Date.now() + 5 * 60 * 1000;
     while (true) {
       const job = parseResponse(response, fdsAnalysisJobSchema, "invalid_fds_analysis_response");
