@@ -1,8 +1,9 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderWithAuth as render } from "../support/render-with-auth";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AxiosError, AxiosHeaders } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { ThemeProvider } from "@/lib/theme-provider";
 import Home from "@/pages/Home";
 import type { HomeSummary } from "@/services/relatorios";

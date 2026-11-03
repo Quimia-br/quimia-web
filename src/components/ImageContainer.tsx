@@ -229,6 +229,7 @@ export function ImageContainer({
   const previewUrl = useImagePreview(value);
   const [failedPreview, setFailedPreview] = useState<string | null>(null);
   const errorId = useId();
+  const inputId = useId();
   const editable = !disabled && !readOnly;
   const {
     session,
@@ -260,7 +261,12 @@ export function ImageContainer({
           isDragReject && "ring-3 ring-destructive",
         )}
       >
-        {editable && <input {...getInputProps({ "aria-label": `Carregar imagem de ${label}` })} />}
+        {editable && (
+          <>
+            <label htmlFor={inputId} className="sr-only">{`Carregar imagem de ${label}`}</label>
+            <input {...getInputProps({ id: inputId })} />
+          </>
+        )}
         {showImage ? (
           <img
             src={previewUrl}

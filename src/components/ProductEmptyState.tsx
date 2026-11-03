@@ -16,11 +16,7 @@ function ProductEmptyState() {
         <DialogTrigger
           handle={handle}
           render={
-            <BasicButton
-              variant="secondary"
-              size="compact"
-              className="min-h-[51px] px-5 py-4 "
-            >
+            <BasicButton variant="secondary" size="compact" className="min-h-[51px] px-5 py-4 ">
               Adicionar produto
             </BasicButton>
           }

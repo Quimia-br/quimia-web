@@ -6,6 +6,8 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   canRefresh: boolean;
   sessionVersion: number;
+  isCurrentSession: (version: number) => boolean;
+  isCurrentCompany: (companyId: number | null) => boolean;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

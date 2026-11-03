@@ -78,17 +78,17 @@ describe("LoginForm", () => {
     await user.type(screen.getByLabelText("Senha"), "secret");
     await user.click(screen.getByRole("button", { name: "Entrar" }));
 
-    expect(screen.getByText("Informe um e-mail valido")).toBeInTheDocument();
+    expect(screen.getByText("Informe um e-mail válido.")).toBeInTheDocument();
     expect(login).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Entrar" }));
-    expect(screen.getByText("Informe um e-mail valido")).toBeInTheDocument();
+    expect(screen.getByText("Informe um e-mail válido.")).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText("E-mail"));
     await user.type(screen.getByLabelText("E-mail"), "user@example.com");
 
     await waitFor(() => {
-      expect(screen.queryByText("Informe um e-mail valido")).not.toBeInTheDocument();
+      expect(screen.queryByText("Informe um e-mail válido.")).not.toBeInTheDocument();
     });
     expect(screen.getByLabelText("E-mail")).toHaveFocus();
     expect(screen.queryByText("Looks good")).not.toBeInTheDocument();
@@ -215,6 +215,31 @@ describe("LoginForm", () => {
     renderLoginForm();
     await user.click(screen.getByRole("link", { name: "Crie já" }));
     expect(await screen.findByText("Signup page")).toBeInTheDocument();
+    expect(login).not.toHaveBeenCalled();
+  });
+
+  it("normalizes the email and preserves every password character", async () => {
+    vi.mocked(login).mockResolvedValue({ id: 1, nome: "QA", email: "qa@example.com" });
+    const user = userEvent.setup();
+    renderLoginForm();
+    expect(screen.getByLabelText("E-mail")).toHaveAttribute("maxlength", "255");
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("maxlength", "72");
+    await user.type(screen.getByLabelText("E-mail"), "QA@EXAMPLE.COM");
+    await user.type(screen.getByLabelText("Senha"), "  Legacy-secret  ");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() =>
+      expect(login).toHaveBeenCalledWith({ email: "qa@example.com", senha: "  Legacy-secret  " }),
+    );
+  });
+
+  it("reports the UTF-8 password limit on its field without sending credentials", async () => {
+    const user = userEvent.setup();
+    renderLoginForm();
+    await user.type(screen.getByLabelText("E-mail"), "qa@example.com");
+    await user.type(screen.getByLabelText("Senha"), "é".repeat(37));
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("72 bytes");
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("aria-invalid", "true");
     expect(login).not.toHaveBeenCalled();
   });
 });

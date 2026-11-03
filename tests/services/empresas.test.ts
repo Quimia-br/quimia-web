@@ -1,7 +1,7 @@
 import { AxiosHeaders } from "axios";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import type { EmpresaMe } from "@/types/Empresa";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { getMe, updateMe, uploadProfilePhoto } from "@/services/empresas";
 
 const profile: EmpresaMe = {
@@ -67,12 +67,12 @@ describe("Empresa profile", () => {
       data,
     });
     await expect(
-      uploadProfilePhoto(new File(["image"], "foto.webp", { type: "image/webp" })),
+      uploadProfilePhoto(new File(["RIFFxxxxWEBP"], "foto.webp", { type: "image/webp" })),
     ).rejects.toMatchObject({ code: "ERR_BAD_RESPONSE" });
   });
 
   it("uploads the selected photo through the existing dedicated photo endpoint", async () => {
-    const image = new File(["image"], "foto.webp", { type: "image/webp" });
+    const image = new File(["RIFFxxxxWEBP"], "foto.webp", { type: "image/webp" });
     api.defaults.adapter = async (config) => {
       expect(config.method).toBe("post");
       expect(config.url).toBe("/empresas/me/foto");

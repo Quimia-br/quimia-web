@@ -3,7 +3,9 @@ import { NavLink } from "react-router-dom";
 import { cn } from "cn";
 import ProfileAvatar from "./ProfileAvatar";
 
-function ProfileContainer() {
+interface ProfileContainerProps { onNavigate?: () => void }
+
+function ProfileContainer({ onNavigate }: ProfileContainerProps) {
   return (
     <SidebarMenuItem>
       <NavLink
@@ -14,6 +16,7 @@ function ProfileContainer() {
           "focus-visible:ring-3 focus-visible:ring-sidebar-ring",
         )}
         to="/profile"
+        onClick={onNavigate}
       >
         <ProfileAvatar />
       </NavLink>

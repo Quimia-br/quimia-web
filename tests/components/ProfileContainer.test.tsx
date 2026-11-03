@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { authKeys } from "@/hooks/use-user";
 import type { EmpresaMe } from "@/types/Empresa";
 import ProfileContainer from "@/components/ProfileContainer";

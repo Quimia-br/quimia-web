@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { AxiosError, AxiosHeaders } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { PropsWithChildren } from "react";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { authKeys } from "@/hooks/use-user";
 import { useLogout } from "@/hooks/use-logout";
@@ -87,7 +87,9 @@ describe("auth mutation cache", () => {
       status: 200,
       statusText: "OK",
       headers: new AxiosHeaders(),
-      data: config.url?.endsWith("/login") ? { accessToken: "valid", empresa } : profile,
+      data: config.url?.endsWith("/login")
+        ? { accessToken: "valid", tokenType: "Bearer", expiresIn: 3600, empresa }
+        : profile,
     });
     const { client, wrapper } = setup();
     client.setQueryData(authKeys.user(), { ...profile, id: 7, nome: "Empresa anterior" });
@@ -181,7 +183,7 @@ describe("auth mutation cache", () => {
         status: 200,
         statusText: "OK",
         headers: new AxiosHeaders(),
-        data: { accessToken: "renewed", empresa },
+        data: { accessToken: "renewed", tokenType: "Bearer", expiresIn: 3600, empresa },
       });
       const { client, wrapper } = setup();
       let announceCancellation!: () => void;

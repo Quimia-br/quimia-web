@@ -1,6 +1,7 @@
 import type { AuthState } from "@/types/AuthState";
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
+import { authIdentityStorage } from "@/lib/utils/auth-storage";
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -34,7 +35,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "quimia:auth-storage",
-      storage: createJSONStorage(() => localStorage),
+      version: 1,
+      storage: authIdentityStorage,
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

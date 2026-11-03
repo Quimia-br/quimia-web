@@ -1,7 +1,7 @@
 import { AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import * as produtos from "@/services/produto";
 
 const originalAdapter = api.defaults.adapter;
@@ -16,7 +16,12 @@ const produto = {
 };
 
 function respond(config: InternalAxiosRequestConfig, data: unknown, status = 200) {
-  if (config.url?.endsWith("/assincronas") && data && typeof data === "object" && "analiseId" in data) {
+  if (
+    config.url?.endsWith("/assincronas") &&
+    data &&
+    typeof data === "object" &&
+    "analiseId" in data
+  ) {
     data = { id: "job-1", status: "concluida", analise: data, codigo: null, detail: null };
     status = 202;
   }
@@ -177,7 +182,7 @@ describe("EmpresaProduto service", () => {
   ])(
     "uploads the product image and returns the registration result for HTTP %s / %s",
     async (status, situacao) => {
-      const imagem = new File(["imagem"], "produto.png", { type: "image/png" });
+      const imagem = new File(["RIFFxxxxWEBP"], "produto.webp", { type: "image/webp" });
       api.defaults.adapter = (config) => {
         expect(config.method).toBe("post");
         expect(config.url).toBe("/empresas/me/produtos");

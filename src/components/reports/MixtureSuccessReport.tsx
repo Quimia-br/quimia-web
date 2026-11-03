@@ -19,7 +19,9 @@ export default function MixtureSuccessReport() {
       caption="A taxa considera apenas misturas avaliadas. Misturas não avaliadas ficam fora do cálculo."
     >
       {(data) => {
-        const series = data.cards.find((card) => card.id === "taxa_sucesso_misturas")!.series;
+        const series =
+          data.cards.find((card) => card.id === "taxa_sucesso_misturas" && card.tipo === "rosca")
+            ?.series ?? [];
         const rate = getMixtureSuccess(series);
         const evaluated = series.reduce((sum, row) => sum + row.valor, 0);
         return (
@@ -83,7 +85,10 @@ export default function MixtureSuccessReport() {
             <ReportDataTable
               caption="Resultados das misturas avaliadas"
               headers={["Resultado", "Misturas"]}
-              rows={series.map((row) => [row.rotulo, reportNumber.format(row.valor)])}
+              rows={series.map((row) => ({
+                id: row.rotulo,
+                cells: [row.rotulo, reportNumber.format(row.valor)],
+              }))}
             />
           </>
         );

@@ -1,3 +1,4 @@
+import RouteMain from "@/components/RouteMain";
 import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "cn";
 import FeedbackItem from "@/components/FeedbackItem";
@@ -25,7 +26,7 @@ export default function AuthFeedback({
   }, []);
 
   return (
-    <main className="relative isolate flex min-h-svh items-center justify-center overflow-clip bg-surface-background px-6 py-12">
+    <RouteMain className="relative isolate flex min-h-svh items-center justify-center overflow-clip bg-surface-background px-6 py-12">
       <AuthBackground feedback extraGlow={extraGlow} />
       <section
         className="flex w-[442px] max-w-full flex-col items-center gap-[43px] text-center max-[480px]:gap-8"
@@ -59,8 +60,8 @@ export default function AuthFeedback({
           </h1>
           {description && <p className="text-base text-foreground">{description}</p>}
         </div>
-        <div className="flex w-full flex-col items-center gap-3">{children}</div>
+        <footer className="flex w-full flex-col items-center gap-3">{children}</footer>
       </section>
-    </main>
+    </RouteMain>
   );
 }

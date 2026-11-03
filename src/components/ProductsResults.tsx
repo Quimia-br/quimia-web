@@ -17,7 +17,7 @@ import EmptyState from "./EmptyState";
 import ProductEmptyState from "./ProductEmptyState";
 import RowActions from "./RowActions";
 import ProductActionDialog, { type ProductAction } from "./ProductActionDialog";
-import { useAuthStore } from "@/lib/auth-token";
+import { useAuth } from "@/hooks/use-auth";
 
 const helper = createColumnHelper<DataTableFeatures, Produto>();
 const columns = helper.columns([
@@ -63,7 +63,7 @@ const columns = helper.columns([
 const emptyProducts: Produto[] = [];
 
 function ProductsResults() {
-  const sessionVersion = useAuthStore((state) => state.sessionVersion);
+  const { sessionVersion } = useAuth();
   const [action, setAction] = useState<(ProductAction & { sessionVersion: number }) | null>(null);
   function selectAction(mode: ProductAction["mode"], product: Produto) {
     setAction({ mode, product, sessionVersion, trigger: document.activeElement as HTMLElement });

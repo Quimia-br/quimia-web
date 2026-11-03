@@ -10,7 +10,7 @@ describe("API origin configuration", () => {
   it("uses VITE_API_URL for production requests and the development proxy", async () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_API_URL", "https://api.example.com/");
-    const { api } = await import("@/lib/api");
+    const { api } = await import("@/services/api");
 
     expect(api.defaults.baseURL).toBe("https://api.example.com/api/v1");
     const config = viteConfig({ command: "serve", mode: "test" });
@@ -20,7 +20,7 @@ describe("API origin configuration", () => {
   it("uses same-origin requests when VITE_API_URL is absent", async () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_API_URL", undefined);
-    const { api } = await import("@/lib/api");
+    const { api } = await import("@/services/api");
 
     expect(api.defaults.baseURL).toBe("/api/v1");
   });
@@ -28,7 +28,7 @@ describe("API origin configuration", () => {
   it("uses same-origin requests and the local development proxy when VITE_API_URL is empty", async () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_API_URL", "");
-    const { api } = await import("@/lib/api");
+    const { api } = await import("@/services/api");
 
     expect(api.defaults.baseURL).toBe("/api/v1");
     const config = viteConfig({ command: "serve", mode: "test" });

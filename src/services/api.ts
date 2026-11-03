@@ -10,7 +10,7 @@ const origin = import.meta.env.DEV ? "" : resolveApiOrigin(import.meta.env);
 type RetryableRequest = InternalAxiosRequestConfig & { _retry?: boolean; _sessionVersion?: number };
 let refreshRequest: { sessionVersion: number; promise: Promise<string> } | null = null;
 
-function refreshAccessToken(sessionVersion: number) {
+function refreshAccessToken(sessionVersion: number): Promise<string> {
   if (refreshRequest?.sessionVersion !== sessionVersion) {
     const promise: Promise<string> = api
       .post<LoginResponse>("/empresas/auth/refresh")
@@ -38,7 +38,7 @@ function refreshAccessToken(sessionVersion: number) {
   return refreshRequest.promise;
 }
 
-export function restoreAccessToken() {
+export function restoreAccessToken(): Promise<string> | undefined {
   const { accessToken, canRefresh, sessionVersion } = useAuthStore.getState();
   if (!accessToken && canRefresh) return refreshAccessToken(sessionVersion);
 }

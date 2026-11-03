@@ -1,11 +1,12 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { renderWithAuth as render } from "./support/render-with-auth";
+import { act, cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import App from "@/App";
 import router from "@/routes";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { queryClient } from "@/lib/query-client";
 

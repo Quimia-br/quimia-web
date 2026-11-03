@@ -42,7 +42,10 @@ function Loading() {
   }, [reduceMotion]);
 
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center justify-center gap-6 bg-background px-6 py-10 text-foreground">
+    <div
+      data-route-loading
+      className="flex min-h-dvh w-full flex-col items-center justify-center gap-6 bg-background px-6 py-10 text-foreground"
+    >
       {reduceMotion ? (
         <img
           src={mascotPoster}
@@ -79,7 +82,7 @@ function Loading() {
           </span>
         </span>
       </p>
-    </main>
+    </div>
   );
 }
 

@@ -4,7 +4,18 @@
     "strict": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2023", "DOM"]
+    "lib": ["ES2023", "DOM"],
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["tests/lib/dev-proxy.test.ts", "tests/build", "vite.config.ts", "build"]
+  "include": [
+    "src/vite-env.d.ts",
+    "tests/lib/api-config.test.ts",
+    "tests/lib/dev-proxy.test.ts",
+    "tests/build",
+    "vite.config.ts",
+    "build"
+  ]
 }

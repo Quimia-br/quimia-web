@@ -1,11 +1,12 @@
+import { renderWithAuth as render } from "../support/render-with-auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import ProtectedRoute from "@/lib/ProtectedRoute";
 

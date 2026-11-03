@@ -63,20 +63,20 @@ describe("SignupForm", () => {
     await user.type(screen.getByLabelText("Senha"), "secret");
     await user.click(screen.getByRole("button", { name: "Cadastrar" }));
 
-    expect(await screen.findByText("CNPJ inválido")).toBeInTheDocument();
-    expect(screen.getByText("Informe um e-mail valido")).toBeInTheDocument();
+    expect(await screen.findByText("Informe um CNPJ válido.")).toBeInTheDocument();
+    expect(screen.getByText("Informe um e-mail válido.")).toBeInTheDocument();
     expect(register).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Cadastrar" }));
-    expect(screen.getByText("CNPJ inválido")).toBeInTheDocument();
-    expect(screen.getByText("Informe um e-mail valido")).toBeInTheDocument();
+    expect(screen.getByText("Informe um CNPJ válido.")).toBeInTheDocument();
+    expect(screen.getByText("Informe um e-mail válido.")).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText("E-mail"));
     await user.type(screen.getByLabelText("E-mail"), "user@example.com");
 
-    expect(screen.getByText("CNPJ inválido")).toBeInTheDocument();
+    expect(screen.getByText("Informe um CNPJ válido.")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.queryByText("Informe um e-mail valido")).not.toBeInTheDocument();
+      expect(screen.queryByText("Informe um e-mail válido.")).not.toBeInTheDocument();
     });
     expect(screen.queryByText("Looks good")).not.toBeInTheDocument();
   });
@@ -128,6 +128,22 @@ describe("SignupForm", () => {
   it("marks its password as a new credential for password managers", () => {
     renderSignupForm();
     expect(screen.getByLabelText("Senha")).toHaveAttribute("autocomplete", "new-password");
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("maxlength", "72");
+    expect(screen.getByLabelText("E-mail")).toHaveAttribute("maxlength", "255");
+    expect(screen.getByLabelText("Nome")).toHaveAttribute("maxlength", "255");
+    expect(screen.getByLabelText("CNPJ")).toHaveAttribute("maxlength", "20");
+  });
+
+  it("rejects a weak password on the field before contacting registration", async () => {
+    const user = userEvent.setup();
+    renderSignupForm();
+    await fillValidSignup(user);
+    await user.clear(screen.getByLabelText("Senha"));
+    await user.type(screen.getByLabelText("Senha"), "password123");
+    await user.click(screen.getByRole("button", { name: "Cadastrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("não seja comum");
+    expect(screen.getByLabelText("Senha")).toHaveAttribute("aria-invalid", "true");
+    expect(register).not.toHaveBeenCalled();
   });
 
   it("restores company data and saves the draft without its password", async () => {

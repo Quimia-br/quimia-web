@@ -9,8 +9,9 @@ import { MemoryRouter } from "react-router-dom";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { ToastProvider, ToastViewport } from "@/components/Toast";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
+import { AuthProvider } from "@/lib/auth-provider";
 import { pendingAnalysis, registeredProduct } from "../fixtures/fds";
 import {
   emptyProductDraft,
@@ -26,6 +27,7 @@ vi.mock("@/lib/product-registration-draft", async (importOriginal) => {
     loadProductDraft: vi.fn(async (owner: number) => actual.restoreProductDraft(saved.get(owner))),
     saveProductDraft: vi.fn(async (owner: number, draft: unknown) => {
       saved.set(owner, draft);
+      return `company:${owner}`;
     }),
     clearProductDraft: vi.fn(async (owner: number) => {
       saved.delete(owner);
@@ -41,7 +43,7 @@ function show(content = <ProductCreateDialog />) {
   return render(
     <QueryClientProvider client={client}>
       <ToastProvider>
-        {content}
+        <AuthProvider>{content}</AuthProvider>
         <ToastViewport label="Avisos da página" />
       </ToastProvider>
     </QueryClientProvider>,
@@ -51,7 +53,7 @@ async function start() {
   const trigger = await screen.findByRole("button", { name: "Cadastrar produto" });
   await waitFor(() => expect(trigger).toBeEnabled());
   await userEvent.setup().click(trigger);
-  fireEvent.change(screen.getByRole("textbox", { name: "Nome", exact: true }), {
+  fireEvent.change(screen.getByRole("textbox", { name: "Nome" }), {
     target: { value: "Produto recuperável" },
   });
   const user = userEvent.setup();
@@ -64,6 +66,7 @@ beforeEach(() => {
   saved.clear();
   vi.mocked(saveProductDraft).mockImplementation(async (owner, draft) => {
     saved.set(owner, draft);
+    return `company:${owner}`;
   });
   vi.mocked(loadProductDraft).mockClear();
   useAuthStore.getState().actions.login("test-token", company);
@@ -139,7 +142,7 @@ describe("product draft recovery and toasts", () => {
     await screen.findAllByText("minha-fds.pdf");
     expect(document.querySelectorAll('[data-slot="dialog-content"]')).toHaveLength(1);
     for (let attempt = 0; attempt < 2; attempt++) {
-      await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+      await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
       await waitFor(() =>
         expect(screen.getByRole("region", { name: "Avisos do cadastro" })).toHaveTextContent(
           "Não foi possível analisar a FDS",
@@ -155,12 +158,12 @@ describe("product draft recovery and toasts", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Código de barras" }), {
       target: { value: "001234" },
     });
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     fireEvent.change(screen.getByLabelText("Arquivo PDF da FDS"), {
       target: { files: [new File(["%PDF-1.7"], "minha-fds.pdf", { type: "application/pdf" })] },
     });
     await screen.findByText("minha-fds.pdf");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await userEvent
       .setup()
       .click(await screen.findByRole("button", { name: "Marcar como resolvido" }));
@@ -182,7 +185,7 @@ describe("product draft recovery and toasts", () => {
       await screen.findByRole("heading", { name: "Pendências identificadas" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marcar como pendência" })).toBeEnabled();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() => expect(saved.has(company.id)).toBe(false));
     expect(
       screen.queryByRole("heading", { name: "Pendências identificadas" }),
@@ -194,12 +197,10 @@ describe("product draft recovery and toasts", () => {
     await waitFor(() => expect(saved.has(company.id)).toBe(true));
     act(() => useAuthStore.getState().actions.login("other-token", { ...company, id: 9102 }));
     await userEvent.setup().click(await screen.findByRole("button", { name: "Cadastrar produto" }));
-    expect(screen.getByRole("textbox", { name: "Nome", exact: true })).toHaveValue("");
+    expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("");
     act(() => useAuthStore.getState().actions.login("first-token", company));
-    expect(await screen.findByRole("textbox", { name: "Nome", exact: true })).toHaveValue(
-      "Produto recuperável",
-    );
-    await userEvent.setup().click(screen.getByRole("button", { name: "Cancelar", exact: true }));
+    expect(await screen.findByRole("textbox", { name: "Nome" })).toHaveValue("Produto recuperável");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Cancelar" }));
     await waitFor(() => expect(saved.has(company.id)).toBe(false));
   });
   it("renders API failures as a dismissible toast and retains the PDF without a red error panel", async () => {
@@ -217,12 +218,12 @@ describe("product draft recovery and toasts", () => {
     };
     show();
     await start();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     fireEvent.change(screen.getByLabelText("Arquivo PDF da FDS"), {
       target: { files: [new File(["%PDF-1.7"], "minha-fds.pdf", { type: "application/pdf" })] },
     });
     await screen.findByText("minha-fds.pdf");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível analisar a FDS");
     const notification = screen.getByRole("alertdialog", { hidden: true });
     act(() => notification.focus());
@@ -238,9 +239,7 @@ describe("product draft recovery and toasts", () => {
       /não foi possível recuperar o rascunho/i,
     );
     await start();
-    expect(screen.getByRole("textbox", { name: "Nome", exact: true })).toHaveValue(
-      "Produto recuperável",
-    );
+    expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Produto recuperável");
   });
   it("records a submission before the request and never discards its analysis after reload", async () => {
     const adapter = api.defaults.adapter as import("axios").AxiosAdapter;
@@ -255,12 +254,12 @@ describe("product draft recovery and toasts", () => {
     };
     const first = show();
     await start();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     fireEvent.change(screen.getByLabelText("Arquivo PDF da FDS"), {
       target: { files: [new File(["%PDF-1.7"], "minha-fds.pdf", { type: "application/pdf" })] },
     });
     await screen.findByText("minha-fds.pdf");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await userEvent
       .setup()
       .click(await screen.findByRole("button", { name: "Adicionar mesmo assim" }));
@@ -283,13 +282,13 @@ describe("product draft recovery and toasts", () => {
     api.defaults.adapter = analyze;
     show();
     await start();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     fireEvent.change(screen.getByLabelText("Arquivo PDF da FDS"), {
       target: { files: [new File(["%PDF-1.7"], "minha-fds.pdf", { type: "application/pdf" })] },
     });
     await screen.findByText("minha-fds.pdf");
     vi.mocked(saveProductDraft).mockRejectedValue(new Error("QuotaExceededError"));
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() =>
       expect(screen.getByRole("region", { name: "Avisos do cadastro" })).toHaveTextContent(
         "O envio não foi iniciado",

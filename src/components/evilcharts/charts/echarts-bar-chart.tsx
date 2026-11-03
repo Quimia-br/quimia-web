@@ -978,32 +978,30 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     const axisValue = first.axisValue ?? first.name ?? "";
     const label = String(axisValue);
 
-    const body = rows
-      .map((param) => {
-        const p = param as {
-          seriesId?: string;
-          seriesName?: string;
-          value?: number | string;
-        };
-        // Internal series (the brush's mini chart, the loading skeleton) never
-        // surface in the tooltip.
-        if (String(p.seriesId ?? "").startsWith("__")) return "";
-        const key = p.seriesId ?? p.seriesName ?? "";
-        const item = config[key];
-        const colorsCount = item ? getColorsCount(item) : 1;
-        const labelText = typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
-        const dimmed = selectedDataKey != null && selectedDataKey !== key ? " opacity-30" : "";
-        const value =
-          typeof p.value === "number" ? p.value.toLocaleString() : String(p.value ?? "");
+    const body = rows.map((param) => {
+      const p = param as {
+        seriesId?: string;
+        seriesName?: string;
+        value?: number | string;
+      };
+      // Internal series (the brush's mini chart, the loading skeleton) never
+      // surface in the tooltip.
+      if (String(p.seriesId ?? "").startsWith("__")) return "";
+      const key = p.seriesId ?? p.seriesName ?? "";
+      const item = config[key];
+      const colorsCount = item ? getColorsCount(item) : 1;
+      const labelText = typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
+      const dimmed = selectedDataKey != null && selectedDataKey !== key ? " opacity-30" : "";
+      const value = typeof p.value === "number" ? p.value.toLocaleString() : String(p.value ?? "");
 
-        return tooltipRow({
-          indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
-          rowKey: key,
-          labelText,
-          valueText: value,
-          dimmed,
-        });
+      return tooltipRow({
+        indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
+        rowKey: key,
+        labelText,
+        valueText: value,
+        dimmed,
       });
+    });
 
     return tooltipShell({
       label,

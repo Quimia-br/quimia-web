@@ -7,6 +7,16 @@ import BasicButton from "./BasicButton";
 import { Field, FieldError, FieldLabel } from "./ui/field";
 import { Input } from "./ui/input";
 
+function withOccurrenceKeys<T>(items: readonly T[], identity: (item: T) => string) {
+  const occurrences = new Map<string, number>();
+  return items.map((item) => {
+    const value = identity(item);
+    const occurrence = occurrences.get(value) ?? 0;
+    occurrences.set(value, occurrence + 1);
+    return { item, key: JSON.stringify([value, occurrence]) };
+  });
+}
+
 const fieldLabels: Record<string, string> = {
   unidade_concentracao: "Unidade de concentração",
   secao: "Informações da seção",
@@ -72,9 +82,11 @@ function PendingCard({ pending, correction, disabled, onCorrect }: CardProps) {
       {pending.evidencias.length > 0 && (
         <div className="flex flex-col gap-2.5">
           <h4 className="text-xl leading-[1.2] font-medium">Texto evidência</h4>
-          {pending.evidencias.map((evidence, index) => (
+          {withOccurrenceKeys(pending.evidencias, (evidence) =>
+            JSON.stringify([evidence.secao, evidence.pagina, evidence.textoEvidencia]),
+          ).map(({ item: evidence, key }) => (
             <blockquote
-              key={index}
+              key={key}
               className="flex flex-col gap-1 text-sm leading-none text-muted-foreground"
             >
               <p>{evidence.textoEvidencia}</p>
@@ -192,6 +204,16 @@ export default function ProductFdsReview({ analysis, corrections, disabled, onCo
   const carousel = useRef<HTMLDivElement>(null);
   const reduceMotion =
     typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pendings = withOccurrenceKeys(analysis.pendencias, (pending) =>
+    JSON.stringify([
+      analysis.analiseId,
+      pending.secao,
+      pending.campo,
+      pending.motivo,
+      pending.composto?.indice,
+      pending.descricao,
+    ]),
+  );
   if (!analysis.pendencias.length)
     return (
       <div
@@ -227,15 +249,17 @@ export default function ProductFdsReview({ analysis, corrections, disabled, onCo
         aria-label="Pendências da FDS"
         className="relative flex w-full snap-x snap-mandatory items-center gap-4 overflow-x-auto overscroll-x-contain px-[max(0px,calc((100%-315px)/2))] [scrollbar-width:none]"
       >
-        {analysis.pendencias.map((pending, index) => (
+        {pendings.map(({ item: pending, key }) => (
           <PendingCard
-            key={`${index}-${pending.campo}-${pending.composto?.indice}`}
+            key={key}
             pending={pending}
             correction={corrections.find(
               (correction) => correction.indice === pending.composto?.indice && pending.corrigivel,
             )}
             disabled={disabled}
-            onCorrect={(correction) => onCorrect(pending.composto!.indice, correction)}
+            onCorrect={(correction) => {
+              if (pending.composto) onCorrect(pending.composto.indice, correction);
+            }}
           />
         ))}
       </div>
@@ -244,9 +268,9 @@ export default function ProductFdsReview({ analysis, corrections, disabled, onCo
           aria-label="Paginação das pendências"
           className="flex max-w-full items-center justify-start gap-2 overflow-x-auto"
         >
-          {analysis.pendencias.map((_, index) => (
+          {pendings.map(({ key }, index) => (
             <button
-              key={index}
+              key={key}
               type="button"
               disabled={disabled}
               aria-label={`Pendência ${index + 1} de ${analysis.pendencias.length}`}

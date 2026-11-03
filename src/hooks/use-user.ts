@@ -8,7 +8,7 @@ export const authKeys = {
 };
 
 export function useUser() {
-  const canRefresh = useAuthStore(state => state.canRefresh);
+  const canRefresh = useAuthStore((state) => state.canRefresh);
   return useQuery({
     enabled: canRefresh,
     queryKey: authKeys.user(),

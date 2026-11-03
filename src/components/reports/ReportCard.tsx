@@ -85,7 +85,7 @@ export function ReportDataTable({
 }: {
   caption: string;
   headers: string[];
-  rows: (string | number)[][];
+  rows: { id: string | number; cells: (string | number)[] }[];
 }) {
   return (
     <details className="mt-4 min-w-0 text-sm">
@@ -110,10 +110,10 @@ export function ReportDataTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, index) => (
-              <tr key={index}>
-                {row.map((cell, column) => (
-                  <td key={column} className="p-2 wrap-break-word">
+            {rows.map((row) => (
+              <tr key={row.id}>
+                {row.cells.map((cell, column) => (
+                  <td key={headers[column]} className="p-2 wrap-break-word">
                     {cell}
                   </td>
                 ))}

@@ -811,49 +811,46 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     // second-to-last point. Keep the first non-null value seen per key so the
     // final point (only the overlay has data there) still shows its number.
     const seen = new Set<string>();
-    const body = rows
-      .map((param) => {
-        const p = param as {
-          seriesId?: string;
-          seriesName?: string;
-          value?: number | string | null;
-        };
-        const rawId = String(p.seriesId ?? "");
-        // Map the dashed buffer overlay back onto its series; drop every other
-        // internal series (mini chart, loading skeleton).
-        const key = rawId.startsWith(BUFFER_PREFIX)
-          ? rawId.slice(BUFFER_PREFIX.length)
-          : rawId.startsWith("__")
-            ? ""
-            : (p.seriesId ?? p.seriesName ?? "");
-        if (!key) return "";
-        // A null value means this series does not reach the hovered x (a buffer
-        // line's solid part stops before the last point) — skip it, and let the
-        // overlay row for the same key stand in.
-        if (p.value === null || p.value === undefined) return "";
-        if (seen.has(key)) return "";
-        seen.add(key);
+    const body = rows.map((param) => {
+      const p = param as {
+        seriesId?: string;
+        seriesName?: string;
+        value?: number | string | null;
+      };
+      const rawId = String(p.seriesId ?? "");
+      // Map the dashed buffer overlay back onto its series; drop every other
+      // internal series (mini chart, loading skeleton).
+      const key = rawId.startsWith(BUFFER_PREFIX)
+        ? rawId.slice(BUFFER_PREFIX.length)
+        : rawId.startsWith("__")
+          ? ""
+          : (p.seriesId ?? p.seriesName ?? "");
+      if (!key) return "";
+      // A null value means this series does not reach the hovered x (a buffer
+      // line's solid part stops before the last point) — skip it, and let the
+      // overlay row for the same key stand in.
+      if (p.value === null || p.value === undefined) return "";
+      if (seen.has(key)) return "";
+      seen.add(key);
 
-        const item = config[key];
-        const colorsCount = item ? getColorsCount(item) : 1;
-        const labelText = typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
-        const hovered = getHoveredKey();
-        const dimmed =
-          (selectedDataKey != null && selectedDataKey !== key) ||
-          (hovered != null && hovered !== key)
-            ? " opacity-30"
-            : "";
-        const value =
-          typeof p.value === "number" ? p.value.toLocaleString() : String(p.value ?? "");
+      const item = config[key];
+      const colorsCount = item ? getColorsCount(item) : 1;
+      const labelText = typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
+      const hovered = getHoveredKey();
+      const dimmed =
+        (selectedDataKey != null && selectedDataKey !== key) || (hovered != null && hovered !== key)
+          ? " opacity-30"
+          : "";
+      const value = typeof p.value === "number" ? p.value.toLocaleString() : String(p.value ?? "");
 
-        return tooltipRow({
-          indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
-          rowKey: key,
-          labelText,
-          valueText: value,
-          dimmed,
-        });
+      return tooltipRow({
+        indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
+        rowKey: key,
+        labelText,
+        valueText: value,
+        dimmed,
       });
+    });
 
     return tooltipShell({
       label,

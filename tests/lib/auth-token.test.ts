@@ -74,13 +74,14 @@ describe("authentication session lifecycle", () => {
     useAuthStore.getState().actions.setAccessToken("replacement-secret");
 
     expect(useAuthStore.getState().accessToken).toBe("replacement-secret");
-    expect(JSON.parse(localStorage.getItem("quimia:auth-storage")!).state).toEqual({
+    expect(JSON.parse(localStorage.getItem("quimia:auth-storage")!)._versao).toBe(1);
+    expect(JSON.parse(localStorage.getItem("quimia:auth-storage")!).dados).toEqual({
       user: empresa,
       isAuthenticated: true,
     });
 
     useAuthStore.getState().actions.logout();
-    expect(JSON.parse(localStorage.getItem("quimia:auth-storage")!).state).toEqual({
+    expect(JSON.parse(localStorage.getItem("quimia:auth-storage")!).dados).toEqual({
       user: null,
       isAuthenticated: false,
     });
@@ -102,5 +103,24 @@ describe("authentication session lifecycle", () => {
       sessionVersion: 0,
       canRefresh: true,
     });
+  });
+
+  it("migrates legacy identity storage and discards persisted credentials", async () => {
+    resetMemory();
+    localStorage.setItem("quimia:auth-storage", JSON.stringify({ state: { user: empresa, isAuthenticated: true, accessToken: "must-not-restore" }, version: 0 }));
+    await useAuthStore.persist.rehydrate();
+    expect(useAuthStore.getState().user).toEqual(empresa);
+    expect(useAuthStore.getState().accessToken).toBeNull();
+    expect(localStorage.getItem("quimia:auth-storage")).not.toContain("must-not-restore");
+    expect(JSON.parse(localStorage.getItem("quimia:auth-storage")!)._versao).toBe(1);
+  });
+
+  it("discards unknown future identity versions instead of trusting authentication", async () => {
+    resetMemory();
+    localStorage.setItem("quimia:auth-storage", JSON.stringify({ _versao: 99, dados: { user: empresa, isAuthenticated: true } }));
+    await useAuthStore.persist.rehydrate();
+    expect(useAuthStore.getState().user).toBeNull();
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(localStorage.getItem("quimia:auth-storage")).toBeNull();
   });
 });

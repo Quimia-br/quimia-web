@@ -1,24 +1,13 @@
-import {
-  useId,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type RefObject,
-  type SyntheticEvent,
-} from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { useProductCreateSession } from "@/hooks/use-product-create-session";
+import { useProductCreateForm, MAX_PRODUCT_IMAGE_SIZE } from "@/hooks/use-product-create-form";
+import type { ReactElement, RefObject } from "react";
 import { LoaderCircle, TriangleAlert, X } from "lucide-react";
 import { cn } from "cn";
-import { z } from "zod";
-import { useAuthStore } from "@/lib/auth-token";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { useProductRegistrationDraft } from "@/hooks/use-product-registration-draft";
 import { useProductCreateDialogHandle } from "@/lib/product-create-dialog-context";
 import type { ProductRegistrationDraft, UpdateProductDraft } from "@/types/ProductRegistration";
 import { ToastProvider, ToastViewport } from "./Toast";
-import { create, getTypes } from "@/services/produto";
 import type { CadastroProdutoForm } from "@/types/Produto";
 import AddButton from "./AddButton";
 import ActionInput from "./ActionInput";
@@ -37,31 +26,6 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from "./ui/field";
 import { ScrollArea } from "./ui/scroll-area";
 import ProductFdsFlow, { type FdsFlowHandle, type ProductRegistrationView } from "./ProductFdsFlow";
-import { fdsError } from "@/lib/fds-error";
-
-import { withFinally } from "@/lib/utils/withFinally";
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const schema = z.object({
-  nome: z
-    .string()
-    .trim()
-    .min(2, "Informe um nome com pelo menos 2 caracteres.")
-    .max(255, "O nome deve ter no máximo 255 caracteres."),
-  tipo: z
-    .string()
-    .trim()
-    .min(1, "Informe o tipo do produto.")
-    .max(50, "O tipo deve ter no máximo 50 caracteres."),
-  descricao: z.string().max(4000, "A descrição deve ter no máximo 4.000 caracteres.").trim(),
-  codBarras: z
-    .string()
-    .max(255, "O código de barras deve ter no máximo 255 dígitos.")
-    // The API removes only ASCII spaces; tabs and other control characters are invalid.
-    .transform((value) => value.replace(/^ +| +$/g, ""))
-    .refine((value) => /^[0-9]*$/.test(value), "Use apenas dígitos no código de barras."),
-});
-type ProductFields = z.infer<typeof schema>;
 
 const fields = [
   { name: "nome", label: "Nome", placeholder: "Limpa vidros", maxLength: 255 },
@@ -75,34 +39,15 @@ const fields = [
   },
 ] as const;
 
-function creationError(error: unknown) {
-  if (axios.isAxiosError(error) && error.message === "invalid_product_creation_response")
-    return "O servidor não confirmou o cadastro. Confira a lista de produtos antes de tentar novamente. Seus dados e a FDS foram mantidos.";
-  const documentError = fdsError(error);
-  if (documentError) return documentError;
-  const messages: Record<string, string> = {
-    tipo_invalido: "Selecione um tipo de produto válido na lista e tente novamente.",
-    produto_ja_cadastrado:
-      "Este produto já está cadastrado na sua empresa. Confira o código de barras.",
-    codigo_barras_invalido: "O código de barras é inválido. Use apenas dígitos.",
-    imagem_muito_grande: "A imagem deve ter no máximo 5 MB. Escolha uma imagem menor.",
-    imagem_invalida: "A imagem é inválida. Escolha um arquivo JPEG, PNG ou WebP.",
-    armazenamento_imagem_indisponivel:
-      "O envio de imagens está indisponível. Tente novamente ou remova a imagem para cadastrar o produto.",
-    armazenamento_imagem_falhou:
-      "Não foi possível enviar a imagem. Tente novamente ou escolha outra imagem.",
-  };
-  if (axios.isAxiosError<{ detail?: string }>(error)) {
-    const detail = error.response?.data?.detail;
-    if (detail && messages[detail]) return messages[detail];
-  }
-  return "Não foi possível adicionar o produto. Confira os dados e tente novamente.";
+interface ProductCreateDialogProps {
+  trigger?: ReactElement;
 }
 
-function ProductCreateDialog({ trigger }: { trigger?: ReactElement }) {
+function ProductCreateDialog({ trigger }: ProductCreateDialogProps) {
   const pageToast = useToast();
   const handle = useProductCreateDialogHandle();
-  const ownerId = useAuthStore((state) => state.user?.id ?? null);
+  const { user } = useAuth();
+  const ownerId = user?.id ?? null;
   return (
     <ToastProvider key={ownerId ?? "anonymous"}>
       <ProductCreateSession
@@ -156,12 +101,7 @@ const registrationViews: Record<
   success: { title: "Pendências identificadas", description: reviewDescription, width: 692 },
 };
 
-function CancelAnalysisDialog({
-  open,
-  discarding,
-  onOpenChange,
-  onConfirm,
-}: {
+interface CancelAnalysisDialogProps {
   open: boolean;
 
   discarding: boolean;
@@ -169,7 +109,14 @@ function CancelAnalysisDialog({
   onOpenChange: (open: boolean) => void;
 
   onConfirm: () => Promise<void>;
-}) {
+}
+
+function CancelAnalysisDialog({
+  open,
+  discarding,
+  onOpenChange,
+  onConfirm,
+}: CancelAnalysisDialogProps) {
   return (
     <Dialog
       open={open}
@@ -222,16 +169,12 @@ function CancelAnalysisDialog({
   );
 }
 
-async function loadProductTypes(signal: AbortSignal, onError: () => void) {
-  try {
-    const data = await getTypes(signal);
-    if (!data.length) throw new Error("no_product_types");
-    return data;
-  } catch (failure) {
-    if (!axios.isCancel(failure)) onError();
-
-    throw failure;
-  }
+interface ProductCreateSessionProps {
+  trigger?: ReactElement;
+  handle: ReturnType<typeof useProductCreateDialogHandle>;
+  ownerId: number | null;
+  onSaved: (title: string) => void;
+  onOutsideError: (message: string) => void;
 }
 
 function ProductCreateSession({
@@ -240,132 +183,35 @@ function ProductCreateSession({
   ownerId,
   onSaved,
   onOutsideError,
-}: {
-  trigger?: ReactElement;
-  handle: ReturnType<typeof useProductCreateDialogHandle>;
-  ownerId: number | null;
-  onSaved: (title: string) => void;
-  onOutsideError: (message: string) => void;
-}) {
-  const toast = useToast();
+}: ProductCreateSessionProps) {
   const {
     draft,
     ready,
-    update: updateDraft,
-    clear: clearDraft,
-    checkpoint,
-    recoveryNotice,
-  } = useProductRegistrationDraft(ownerId, reportDraftError);
-  function reportDraftError(description: string) {
-    if (draft.open)
-      toast.add({
-        id: "product-draft-error",
-        type: "error",
-        priority: "high",
-        title: "Rascunho do produto",
-        description,
-      });
-    else onOutsideError(description);
-  }
-  const open = draft.open;
-  const view = draft.view;
-  function setView(view: ProductRegistrationView) {
-    updateDraft({ view });
-  }
-  const [confirmCancel, setConfirmCancel] = useState(false);
-  const [discarding, setDiscarding] = useState(false);
-  const [preparingSubmission, setPreparingSubmission] = useState(false);
-  const flowRef = useRef<FdsFlowHandle>(null);
-  const saving = useRef(false);
-  const queryClient = useQueryClient();
-  const sessionVersion = useAuthStore((state) => state.sessionVersion);
-  const recoveryReported = useRef(false);
-  useEffect(() => {
-    if (recoveryNotice === "submission" && !recoveryReported.current) {
-      recoveryReported.current = true;
-      toast.add({
-        id: "product-submission-recovery",
-        type: "warning",
-        priority: "high",
-        timeout: 0,
-        title: "Confira se o produto foi cadastrado",
-        description:
-          "A página foi recarregada durante o envio. Confira sua lista antes de tentar novamente. Os dados e arquivos foram mantidos.",
-      });
-    }
-  }, [recoveryNotice, toast]);
-  const mutation = useMutation({
-    mutationFn: create,
-    retry: false,
-    onSuccess: ({ situacao }) => {
-      void queryClient.invalidateQueries({ queryKey: ["products", sessionVersion] });
-      onSaved(
-        situacao === "vinculado"
-          ? "Produto vinculado com sucesso!"
-          : situacao === "reativado"
-            ? "Produto reativado com sucesso!"
-            : "Produto adicionado com sucesso!",
-      );
-      clearDraft();
-    },
-    onError: (failure) => {
-      if (!axios.isCancel(failure))
-        toast.add({
-          id: "product-create-error",
-          type: "error",
-          priority: "high",
-          title: "Não foi possível adicionar o produto",
-          description: creationError(failure),
-        });
-    },
-    onSettled: () => {
-      saving.current = false;
-    },
-  });
-
-  async function submit(value: CadastroProdutoForm) {
-    if (saving.current) return;
-    saving.current = true;
-    setPreparingSubmission(true);
-    const persisted = await checkpoint({ ...draft, submissionPending: true });
-    setPreparingSubmission(false);
-    if (!persisted || (useAuthStore.getState().user?.id ?? null) !== ownerId) {
-      saving.current = false;
-      return;
-    }
-    mutation.mutate(value);
-  }
-
-  function requestClose() {
-    if (saving.current || discarding || flowRef.current?.isDiscarding()) return;
-    if (flowRef.current?.hasAnalysis()) setConfirmCancel(true);
-    else clearDraft();
-  }
-
-  function cleanupError() {
-    onOutsideError("Não foi possível descartar o PDF temporário. Tente novamente.");
-  }
-
+    updateDraft,
+    open,
+    view,
+    setView,
+    confirmCancel,
+    setConfirmCancel,
+    discarding,
+    preparingSubmission,
+    flowRef,
+    mutation,
+    submit,
+    requestClose,
+    cleanupError,
+    onOpenChange,
+    edit,
+    beforeAnalyze,
+    confirmCancellation,
+  } = useProductCreateSession({ ownerId, onSaved, onOutsideError });
   const reviewing = view === "review" || view === "success";
 
   const { title, description, width } = registrationViews[view];
 
   return (
     <>
-      <Dialog
-        handle={handle}
-        open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            requestClose();
-            return;
-          }
-          if (!ready) return;
-          for (const notice of toast.toasts) toast.close(notice.id);
-          mutation.reset();
-          updateDraft({ open: true, view: "details" });
-        }}
-      >
+      <Dialog handle={handle} open={open} onOpenChange={onOpenChange}>
         <DialogTrigger
           disabled={!ready}
           render={trigger ?? <AddButton aria-label="Cadastrar produto" />}
@@ -402,12 +248,7 @@ function ProductCreateSession({
               busy={preparingSubmission || mutation.isPending}
               error={mutation.error}
               onSubmit={submit}
-              onEdit={() => {
-                if (!saving.current) {
-                  mutation.reset();
-                  toast.close("product-create-error");
-                }
-              }}
+              onEdit={edit}
               onCancel={requestClose}
               view={view}
               onViewChange={setView}
@@ -415,10 +256,7 @@ function ProductCreateSession({
               onCleanupError={cleanupError}
               draft={draft}
               updateDraft={updateDraft}
-              onBeforeAnalyze={async () => {
-                const persisted = await checkpoint({ ...draft, view: "analyzing" });
-                return persisted && (useAuthStore.getState().user?.id ?? null) === ownerId;
-              }}
+              onBeforeAnalyze={beforeAnalyze}
             />
           )}
         </DialogContent>
@@ -430,22 +268,7 @@ function ProductCreateSession({
 
         onOpenChange={setConfirmCancel}
 
-        onConfirm={async () => {
-          setDiscarding(true);
-
-          await withFinally(
-            async () => {
-              try {
-                await flowRef.current?.discard();
-                setConfirmCancel(false);
-                clearDraft();
-              } catch {
-                cleanupError();
-              }
-            },
-            () => setDiscarding(false),
-          );
-        }}
+        onConfirm={confirmCancellation}
       />
     </>
   );
@@ -480,77 +303,22 @@ function ProductCreateForm({
   updateDraft,
   onBeforeAnalyze,
 }: ProductCreateFormProps) {
-  const id = useId();
-  const sessionVersion = useAuthStore((state) => state.sessionVersion);
-  const toast = useToast();
-  const types = useQuery({
-    queryKey: ["product-types", sessionVersion],
-
-    queryFn: ({ signal }) =>
-      loadProductTypes(signal, () => {
-        toast.add({
-          type: "error",
-          priority: "high",
-          title: "Não foi possível carregar os tipos de produto",
-          description: "Tente novamente para continuar o cadastro.",
-        });
-      }),
-
-    staleTime: Infinity,
-    retry: false,
-  });
-  const values = draft.fields;
-  const [errors, setErrors] = useState<Partial<Record<keyof ProductFields, string>>>({});
-  const image = draft.image;
-  const details = view === "details";
-
-  const product: CadastroProdutoForm = {
-    nome: values.nome.trim(),
-    tipo: values.tipo,
-    descricao: values.descricao.trim() || undefined,
-    codBarras: values.codBarras.trim() || undefined,
-    imagem: image ?? undefined,
-  };
-
-  function changeField(name: keyof ProductFields, value: string) {
-    updateDraft((current) => ({ ...current, fields: { ...current.fields, [name]: value } }));
-    if (errors[name]) validateField(name, value);
-    onEdit();
-  }
-
-  function validateField(name: keyof ProductFields, value?: string) {
-    const result = schema.shape[name].safeParse(value ?? values[name]);
-    setErrors((current) => ({
-      ...current,
-      [name]: result.success ? undefined : result.error.issues[0]?.message,
-    }));
-  }
-
-  function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    const result = schema.safeParse(values);
-    if (!result.success) {
-      setErrors(
-        Object.fromEntries(
-          result.error.issues.toReversed().map((issue) => [issue.path[0], issue.message]),
-        ),
-      );
-      const firstField = result.error.issues[0]?.path[0];
-      if (firstField)
-        event.currentTarget
-          .querySelector<HTMLElement>(`[id="${id}-${String(firstField)}"]`)
-          ?.focus();
-      return;
-    }
-    if (!types.data?.includes(result.data.tipo)) {
-      setErrors({ tipo: "Selecione um tipo de produto válido." });
-      event.currentTarget.querySelector<HTMLElement>(`[id="${id}-tipo"]`)?.focus();
-      return;
-    }
-    updateDraft({ fields: result.data });
-    onViewChange("upload");
-  }
+  const {
+    id,
+    types,
+    values,
+    errors,
+    image,
+    details,
+    product,
+    changeField,
+    validateField,
+    handleSubmit,
+    reportImageError,
+    changeImage,
+    removeImage,
+    changeFds,
+  } = useProductCreateForm({ busy, onEdit, view, draft, updateDraft, onViewChange });
 
   return (
     <>
@@ -576,28 +344,9 @@ function ProductCreateForm({
                 className="w-[180px] @min-[650px]:w-full"
                 value={image}
                 disabled={busy}
-                maxFileSize={MAX_IMAGE_SIZE}
-                onError={(description) =>
-                  toast.add({
-                    type: "error",
-                    priority: "high",
-                    title: "Não foi possível usar a imagem",
-                    description,
-                  })
-                }
-                onChange={(file) => {
-                  if (file && file.size > MAX_IMAGE_SIZE) {
-                    toast.add({
-                      type: "error",
-                      priority: "high",
-                      title: "A imagem deve ter no máximo 5 MB",
-                      description: "Escolha uma imagem menor.",
-                    });
-                    return;
-                  }
-                  updateDraft({ image: file });
-                  onEdit();
-                }}
+                maxFileSize={MAX_PRODUCT_IMAGE_SIZE}
+                onError={reportImageError}
+                onChange={changeImage}
               />
               {image && (
                 <Button
@@ -605,10 +354,7 @@ function ProductCreateForm({
                   variant="link"
                   size="sm"
                   disabled={busy}
-                  onClick={() => {
-                    updateDraft({ image: null });
-                    onEdit();
-                  }}
+                  onClick={removeImage}
                 >
                   Remover imagem
                 </Button>
@@ -736,12 +482,7 @@ function ProductCreateForm({
         onCleanupError={onCleanupError}
         onEdit={onEdit}
         draft={draft.fds}
-        onDraftChange={(patch) =>
-          updateDraft((current) => ({
-            ...current,
-            fds: typeof patch === "function" ? patch(current.fds) : { ...current.fds, ...patch },
-          }))
-        }
+        onDraftChange={changeFds}
       />
     </>
   );

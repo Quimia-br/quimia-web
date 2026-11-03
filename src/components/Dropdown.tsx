@@ -1,12 +1,7 @@
 import { useId } from "react";
 import { Select } from "@base-ui/react/select";
 import { cn } from "cn";
-import {
-  Field,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-} from "@/components/ui/field";
+import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 export interface DropdownOption {
@@ -143,27 +138,16 @@ export default function Dropdown({
 }: DropdownProps) {
   const generatedId = useId();
   const id = controlProps.id ?? `dropdown-${generatedId}`;
-  const messageId = error
-    ? `${id}-error`
-    : description
-      ? `${id}-description`
-      : undefined;
+  const messageId = error ? `${id}-error` : description ? `${id}-description` : undefined;
   const describedBy =
-    [controlProps["aria-describedby"], messageId].filter(Boolean).join(" ") ||
-    undefined;
+    [controlProps["aria-describedby"], messageId].filter(Boolean).join(" ") || undefined;
   return (
     <Field
-      className={cn(
-        "group/dropdown-field min-w-0 gap-4 text-base font-medium",
-        containerClassName,
-      )}
+      className={cn("group/dropdown-field min-w-0 gap-4 text-base font-medium", containerClassName)}
       data-invalid={!!error}
       data-disabled={controlProps.disabled}
     >
-      <FieldLabel
-        htmlFor={id}
-        className="text-base leading-none text-foreground"
-      >
+      <FieldLabel htmlFor={id} className="text-base leading-none text-foreground">
         {label}
       </FieldLabel>
       <DropdownControl

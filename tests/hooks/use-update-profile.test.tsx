@@ -6,7 +6,7 @@ import { afterEach, beforeEach, expect, it } from "vite-plus/test";
 import { useUpdateProfile } from "@/hooks/use-update-profile";
 import { authKeys } from "@/hooks/use-user";
 import { useAuthStore } from "@/lib/auth-token";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { ProfilePhotoError } from "@/lib/profile-photo-error";
 
 const profile = {

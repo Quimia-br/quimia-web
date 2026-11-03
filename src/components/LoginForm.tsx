@@ -1,95 +1,12 @@
-import { revalidateLogic, useForm, useSelector } from "@tanstack/react-form";
-import * as z from "zod";
 import BasicButton from "@/components/BasicButton";
 import Form from "@/components/smoothui/form";
 import FormTextField from "@/components/FormTextField";
 import LinkButton from "@/components/LinkButton";
-import { useLogin } from "@/hooks/use-login";
-import { useLocation, useNavigate } from "react-router-dom";
-import { loadFormDraft, useFormDraft } from "@/hooks/use-form-draft";
-import { useCallback } from "react";
-import axios from "axios";
-
-const STORAGE_KEY = "quimia:login-draft";
-
-const formSchema = z.object({
-  email: z.email("Informe um e-mail valido"),
-  password: z.string().nonempty("Informe uma senha"),
-});
-
-function loginErrorMessage(error: unknown) {
-  if (axios.isAxiosError<{ detail?: string }>(error)) {
-    const status = error.response?.status;
-    const detail = error.response?.data?.detail;
-    if (status === 423 && detail === "blocked") {
-      return "Sua conta está temporariamente bloqueada por tentativas de acesso. Aguarde alguns minutos e tente novamente.";
-    }
-    if (status === 403 && detail === "inactive") {
-      return "Esta conta de empresa está inativa. Entre em contato com o responsável pela empresa.";
-    }
-    if (status !== undefined && status >= 500) {
-      return "O serviço está temporariamente indisponível. Tente novamente mais tarde.";
-    }
-  }
-  return "Não foi possível entrar. Verifique seu e-mail e senha.";
-}
+import { useLoginForm } from "@/hooks/use-login-form";
 
 function LoginForm() {
-  const login = useLogin();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const form = useForm({
-    defaultValues: loadFormDraft(STORAGE_KEY, {
-      email: "",
-      password: "",
-    }),
-    validators: {
-      onDynamic: formSchema,
-    },
-    validationLogic: revalidateLogic({
-      mode: "submit",
-      modeAfterSubmission: "change",
-    }),
-    onSubmit: async ({ value }) => {
-      await login.mutateAsync({
-        email: value.email,
-        senha: value.password,
-      });
-
-      const from = location.state?.from;
-      const destination = from ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}` : "/";
-
-      navigate(destination, { replace: true });
-    },
-  });
-  const errors = useSelector(form.store, (state) => {
-    const rawErrors = state.errorMap.onDynamic;
-    if (!rawErrors) return undefined;
-
-    return Object.fromEntries(
-      Object.entries(rawErrors).map(([field, issues]) => [field, issues?.[0]?.message || ""]),
-    );
-  });
-
-  const values = useSelector(form.store, (state) => state.values);
-
-  const selectLoginDraft = useCallback(
-    (current: typeof values) => ({
-      email: current.email,
-    }),
-    [],
-  );
-
-  useFormDraft(STORAGE_KEY, values, selectLoginDraft);
-
-  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      await form.handleSubmit();
-    } catch {
-      // The mutation error is displayed below the fields.
-    }
-  };
+  const { form, errors, pending, handleSubmit, submitDisabled, errorMessage, limits } =
+    useLoginForm();
 
   return (
     <Form className="w-full gap-6" errors={errors} onFormSubmit={handleSubmit}>
@@ -99,6 +16,7 @@ function LoginForm() {
             name={field.name}
             label="E-mail"
             type="email"
+            maxLength={limits.email}
             autoComplete="email"
             placeholder="email.exemplo@quimia.com"
             value={field.state.value}
@@ -114,6 +32,7 @@ function LoginForm() {
             name={field.name}
             label="Senha"
             type="password"
+            maxLength={limits.password}
             autoComplete="current-password"
             placeholder="Quimia123@"
             value={field.state.value}
@@ -123,28 +42,17 @@ function LoginForm() {
         )}
       </form.Field>
 
-      <LinkButton to="/reset-password">
-        Esqueceu a senha?
-      </LinkButton>
+      <LinkButton to="/reset-password">Esqueceu a senha?</LinkButton>
 
       <div className="flex flex-col gap-2">
-        {login.isError && (
+        {errorMessage && (
           <p className="text-sm text-center text-destructive" role="alert">
-            {loginErrorMessage(login.error)}
+            {errorMessage}
           </p>
         )}
-        <form.Subscribe
-          selector={(state) => ({
-            hasAllValues: Object.values(state.values).every((value) => value.trim().length > 0),
-            isSubmitting: state.isSubmitting,
-          })}
-        >
-          {({ hasAllValues, isSubmitting }) => (
-            <BasicButton disabled={!hasAllValues || isSubmitting} type="submit">
-              {isSubmitting ? "Entrando..." : "Entrar"}
-            </BasicButton>
-          )}
-        </form.Subscribe>
+        <BasicButton disabled={submitDisabled} type="submit">
+          {pending ? "Entrando..." : "Entrar"}
+        </BasicButton>
         <p className="text-base text-center text-muted-foreground">
           Não tem conta no Quimia? <LinkButton to="/signup">Crie já</LinkButton>
         </p>

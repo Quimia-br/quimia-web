@@ -10,7 +10,8 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import ProductCreateDialog from "@/components/ProductCreateDialog";
 import { ToastProvider } from "@/components/Toast";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
+import { AuthProvider } from "@/lib/auth-provider";
 import { cleanAnalysis, pendingAnalysis, registeredProduct } from "../fixtures/fds";
 
 const originalAdapter = api.defaults.adapter;
@@ -18,7 +19,12 @@ const clients: QueryClient[] = [];
 const pdf = (name = "seguranca.pdf") =>
   new File(["%PDF-1.7\nFDS"], name, { type: "application/pdf" });
 function response(config: InternalAxiosRequestConfig, data: unknown, status = 200) {
-  if (config.url?.endsWith("/assincronas") && data && typeof data === "object" && "analiseId" in data) {
+  if (
+    config.url?.endsWith("/assincronas") &&
+    data &&
+    typeof data === "object" &&
+    "analiseId" in data
+  ) {
     data = { id: "job-1", status: "concluida", analise: data, codigo: null, detail: null };
     status = 202;
   }
@@ -30,7 +36,9 @@ function setup() {
   render(
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <ProductCreateDialog />
+        <AuthProvider>
+          <ProductCreateDialog />
+        </AuthProvider>
       </ToastProvider>
     </QueryClientProvider>,
   );
@@ -45,7 +53,7 @@ async function start() {
   await waitFor(() => expect(type).toBeEnabled());
   await user.click(type);
   await user.click(await screen.findByRole("option", { name: "Limpeza geral" }));
-  await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+  await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
 }
 async function selectPdf(file = pdf()) {
   fireEvent.change(screen.getByLabelText("Arquivo PDF da FDS"), { target: { files: [file] } });
@@ -53,7 +61,7 @@ async function selectPdf(file = pdf()) {
 }
 async function analyze() {
   await selectPdf();
-  await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+  await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
   await screen.findByRole("heading", { name: "Pendências identificadas" });
 }
 beforeEach(() => {
@@ -111,10 +119,10 @@ describe("Product FDS registration", () => {
     );
     expect(screen.getByRole("dialog", { name: "Pendências identificadas" })).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "Editar dados do produto" }));
-    expect(screen.getByRole("textbox", { name: "Nome", exact: true })).toHaveValue("Limpa vidros");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    expect(screen.getByRole("textbox", { name: "Nome" })).toHaveValue("Limpa vidros");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     expect(screen.getByText("seguranca.pdf")).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await userEvent.setup().click(screen.getByRole("button", { name: "Adicionar mesmo assim" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(attempts).toBe(2);
@@ -143,7 +151,7 @@ describe("Product FDS registration", () => {
     const confirmation = await screen.findByRole("dialog", { name: "Remover a FDS selecionada?" });
     await userEvent
       .setup()
-      .click(within(confirmation).getByRole("button", { name: "Remover arquivo", exact: true }));
+      .click(within(confirmation).getByRole("button", { name: "Remover arquivo" }));
     expect(within(confirmation).getByRole("button", { name: "Voltar" })).toBeDisabled();
     await userEvent.setup().keyboard("{Escape}");
     expect(confirmation).toBeInTheDocument();
@@ -166,10 +174,10 @@ describe("Product FDS registration", () => {
     };
     setup();
     await start();
-    expect(screen.getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
     await analyze();
     expect(screen.getByText("Nenhuma pendência foi encontrada.")).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(requests).toHaveLength(2);
     expect(requests[0].url).toBe("/empresas/me/produtos/fds/analises/assincronas");
@@ -205,7 +213,7 @@ describe("Product FDS registration", () => {
       target: { value: "%" },
     });
     await userEvent.setup().click(screen.getByRole("button", { name: "Salvar correção" }));
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() => expect(saved).toBeDefined());
     expect(JSON.parse(saved!.get("correcoesFds") as string)).toEqual([
       { indice: 0, unidadeConcentracao: "%" },
@@ -262,11 +270,9 @@ describe("Product FDS registration", () => {
       .click(screen.getByRole("button", { name: "Substituir documento corrigido" }));
     expect(screen.getByRole("heading", { name: "Alterar FDS" })).toBeInTheDocument();
     await selectPdf(pdf("corrigida.pdf"));
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "Adicionar produto", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Adicionar produto" }));
     await screen.findByText("Nenhuma pendência foi encontrada.");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() => expect(saved?.get("analiseFds")).toBe("analise-2"));
   });
   it("discards the analyzed PDF when closing without saving", async () => {
@@ -288,9 +294,7 @@ describe("Product FDS registration", () => {
     const confirmation = await screen.findByRole("dialog", {
       name: "Tem certeza que deseja cancelar a análise da FDS?",
     });
-    await userEvent
-      .setup()
-      .click(within(confirmation).getByRole("button", { name: "Cancelar", exact: true }));
+    await userEvent.setup().click(within(confirmation).getByRole("button", { name: "Cancelar" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(discarded).toEqual(["analise-1"]);
   });
@@ -311,7 +315,7 @@ describe("Product FDS registration", () => {
     setup();
     await start();
     await selectPdf();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await screen.findByRole("heading", { name: "Estamos analisando sua FDS" });
     await userEvent
       .setup()
@@ -319,9 +323,7 @@ describe("Product FDS registration", () => {
     const confirmation = await screen.findByRole("dialog", {
       name: "Tem certeza que deseja cancelar a análise da FDS?",
     });
-    await userEvent
-      .setup()
-      .click(within(confirmation).getByRole("button", { name: "Cancelar", exact: true }));
+    await userEvent.setup().click(within(confirmation).getByRole("button", { name: "Cancelar" }));
     await act(async () => {
       release?.();
     });
@@ -333,19 +335,26 @@ describe("Product FDS registration", () => {
     api.defaults.adapter = async (config) => {
       if (config.url?.endsWith("/tipos")) return response(config, ["limpeza_geral"]);
       if (++calls === 1)
-        return response(config, {
-          id: "job-1", status: "falhou", analise: null,
-          codigo: 503, detail: "extrator_indisponivel",
-        }, 202);
+        return response(
+          config,
+          {
+            id: "job-1",
+            status: "falhou",
+            analise: null,
+            codigo: 503,
+            detail: "extrator_indisponivel",
+          },
+          202,
+        );
       return response(config, cleanAnalysis);
     };
     setup();
     await start();
     await selectPdf();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/indisponível/);
     expect(screen.getByText("seguranca.pdf")).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     expect(await screen.findByText("Nenhuma pendência foi encontrada.")).toBeInTheDocument();
   });
   it("recovers from an expired identifier without losing the draft", async () => {
@@ -369,11 +378,11 @@ describe("Product FDS registration", () => {
     setup();
     await start();
     await analyze();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/expirou/);
     await userEvent.setup().click(screen.getByRole("button", { name: "Reanalisar FDS" }));
     await screen.findByText("Nenhuma pendência foi encontrada.");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(reads).toBe(2);
   });
