@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "strict": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["tests/lib/dev-proxy.test.ts", "tests/build", "vite.config.ts", "build"]
+}

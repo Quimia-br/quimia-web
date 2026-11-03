@@ -15,6 +15,54 @@ describe("form drafts", () => {
       email: "saved@example.com",
       accepted: false,
     });
+    expect(JSON.parse(localStorage.getItem("signup")!)).toEqual({
+      _versao: 1,
+      dados: { email: "saved@example.com", accepted: false },
+    });
+  });
+
+  it("restricts restored fields to the fallback and never restores credentials", () => {
+    localStorage.setItem(
+      "signup",
+      JSON.stringify({
+        email: "saved@example.com",
+        password: "secret",
+        token: "secret",
+        admin: true,
+      }),
+    );
+    expect(loadFormDraft("signup", { email: "", password: "" })).toEqual({
+      email: "saved@example.com",
+      password: "",
+    });
+    expect(localStorage.getItem("signup")).not.toContain("secret");
+    expect(localStorage.getItem("signup")).not.toContain("admin");
+  });
+
+  it("validates nested fields while preserving defaults and excluding nested credentials", () => {
+    localStorage.setItem(
+      "signup",
+      JSON.stringify({ profile: { name: "Saved", password: "secret", admin: true } }),
+    );
+    expect(loadFormDraft("signup", { profile: { name: "", password: "", accepted: false } })).toEqual({
+      profile: { name: "Saved", password: "", accepted: false },
+    });
+    expect(JSON.parse(localStorage.getItem("signup")!)).toEqual({
+      _versao: 1,
+      dados: { profile: { name: "Saved", accepted: false } },
+    });
+  });
+
+  it.each([
+    { email: 123 },
+    { email: { value: "invalid" } },
+    ["invalid"],
+    { _versao: 99, dados: { email: "future@example.com" } },
+    { _versao: 1, dados: { email: false } },
+  ])("discards an invalid or unsupported draft (%j)", (saved) => {
+    localStorage.setItem("signup", JSON.stringify(saved));
+    expect(loadFormDraft("signup", { email: "" })).toEqual({ email: "" });
+    expect(localStorage.getItem("signup")).toBeNull();
   });
 
   it.each([null, "", "{invalid"])(
@@ -40,10 +88,33 @@ describe("form drafts", () => {
     const { rerender } = renderHook(({ key, values }) => useFormDraft(key, values, select), {
       initialProps: { key: "login", values: { email: "first@example.com", password: "secret" } },
     });
-    expect(localStorage.getItem("login")).toBe('{"email":"first@example.com"}');
+    expect(JSON.parse(localStorage.getItem("login")!)).toEqual({
+      _versao: 1,
+      dados: { email: "first@example.com" },
+    });
     rerender({ key: "signup", values: { email: "next@example.com", password: "different" } });
-    expect(localStorage.getItem("signup")).toBe('{"email":"next@example.com"}');
-    expect(localStorage.getItem("login")).toBe('{"email":"first@example.com"}');
+    expect(JSON.parse(localStorage.getItem("signup")!)).toEqual({
+      _versao: 1,
+      dados: { email: "next@example.com" },
+    });
+    expect(JSON.parse(localStorage.getItem("login")!)).toEqual({
+      _versao: 1,
+      dados: { email: "first@example.com" },
+    });
+  });
+
+  it("excludes credentials even when the selector accidentally returns them", () => {
+    renderHook(() =>
+      useFormDraft(
+        "signup",
+        { email: "saved@example.com", senha: "secret", recoveryCode: "secret" },
+        (values) => values,
+      ),
+    );
+    expect(JSON.parse(localStorage.getItem("signup")!)).toEqual({
+      _versao: 1,
+      dados: { email: "saved@example.com" },
+    });
   });
 
   it("clears only the requested draft", () => {

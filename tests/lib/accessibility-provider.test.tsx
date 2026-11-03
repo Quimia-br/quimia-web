@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { AccessibilityProvider } from "@/lib/accessibility-provider";
 import { useAccessibility } from "@/hooks/use-accessibility";
-import { initializeAccessibility } from "@/lib/accessibility";
+import { initializeAccessibility, readAccessibility } from "@/lib/accessibility";
 
 afterEach(() => {
   localStorage.clear();
@@ -23,6 +23,10 @@ describe("global accessibility preferences", () => {
       textScale: 150,
       vlibrasEnabled: false,
       gazeEnabled: false,
+    });
+    expect(JSON.parse(localStorage.getItem("quimia:accessibility")!)).toEqual({
+      _versao: 1,
+      dados: { version: 1, textScale: 150, dyslexicFont: true, vlibrasEnabled: false },
     });
     act(() => result.current.setVlibrasEnabled(true));
     act(() => result.current.setGazeEnabled(true));
@@ -79,5 +83,27 @@ describe("global accessibility preferences", () => {
     act(() => result.current.setTextScale(125));
     expect(result.current.textScale).toBe(125);
     expect(document.documentElement.style.fontSize).toBe("125%");
+  });
+
+  it.each([
+    { _versao: 2, dados: { version: 1, textScale: 150, dyslexicFont: true, vlibrasEnabled: true } },
+    {
+      _versao: 1,
+      dados: { version: 1, textScale: 150, dyslexicFont: true, vlibrasEnabled: "true" },
+    },
+    { version: 1, textScale: 150, dyslexicFont: true, vlibrasEnabled: "false" },
+    {
+      _versao: 1,
+      dados: { version: 1, textScale: "150", dyslexicFont: true, vlibrasEnabled: true },
+    },
+  ])("discards unknown versions and malformed preference fields (%j)", (saved) => {
+    localStorage.setItem("quimia:accessibility", JSON.stringify(saved));
+    expect(readAccessibility()).toEqual({
+      version: 1,
+      textScale: 100,
+      dyslexicFont: false,
+      vlibrasEnabled: false,
+    });
+    expect(localStorage.getItem("quimia:accessibility")).toBeNull();
   });
 });

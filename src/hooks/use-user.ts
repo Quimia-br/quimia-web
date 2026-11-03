@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMe } from "@/services/empresas";
+import { useAuthStore } from "@/lib/auth-token";
 
 export const authKeys = {
   all: ["auth"] as const,
@@ -7,7 +8,9 @@ export const authKeys = {
 };
 
 export function useUser() {
+  const canRefresh = useAuthStore(state => state.canRefresh);
   return useQuery({
+    enabled: canRefresh,
     queryKey: authKeys.user(),
     queryFn: ({ signal }) => getMe(signal),
     retry: false,

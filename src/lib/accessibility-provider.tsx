@@ -1,11 +1,11 @@
 import { useLayoutEffect, useState, type ReactNode } from "react";
 import { AccessibilityContext } from "@/hooks/use-accessibility";
 import {
-  ACCESSIBILITY_KEY,
   DEFAULT_ACCESSIBILITY,
   TEXT_SCALES,
   applyAccessibility,
   readAccessibility,
+  writeAccessibility,
   type AccessibilityPreferences,
   type TextScale,
 } from "./accessibility";
@@ -16,11 +16,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   useLayoutEffect(() => {
     applyAccessibility(preferences);
-    try {
-      localStorage.setItem(ACCESSIBILITY_KEY, JSON.stringify(preferences));
-    } catch {
-      // Keep the current choice in memory when storage is unavailable.
-    }
+    writeAccessibility(preferences);
   }, [preferences]);
 
   function update(patch: Partial<AccessibilityPreferences>) {

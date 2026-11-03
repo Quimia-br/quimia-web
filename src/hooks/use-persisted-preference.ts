@@ -1,29 +1,21 @@
 import { useCallback, useState } from "react";
+import { preferenceSchema, readStoredValue, writeStoredValue } from "@/utils/storage";
 
 export function usePersistedPreference<T extends string>(
   storageKey: string,
   fallback: T,
   isValid: (value: string) => value is T,
 ) {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const saved = window.localStorage.getItem(storageKey);
-      return saved !== null && isValid(saved) ? saved : fallback;
-    } catch {
-      return fallback;
-    }
-  });
+  const [value, setValue] = useState<T>(() =>
+    readStoredValue(storageKey, preferenceSchema(isValid), fallback),
+  );
 
   const setPreference = useCallback(
     (next: T) => {
       setValue(next);
-      try {
-        window.localStorage.setItem(storageKey, next);
-      } catch {
-        // Keep the current choice in memory when storage is unavailable.
-      }
+      writeStoredValue(storageKey, next, preferenceSchema(isValid));
     },
-    [storageKey],
+    [storageKey, isValid],
   );
 
   return [value, setPreference] as const;

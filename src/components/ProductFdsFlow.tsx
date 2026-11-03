@@ -1,10 +1,11 @@
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { cn } from "cn";
 import { FileText } from "lucide-react";
 import { analyzeFds, discardFdsAnalysis } from "@/services/produto";
 import { fdsError } from "@/lib/fds-error";
+import { withFinally } from "@/lib/utils/withFinally";
 import { useToast } from "@/hooks/use-toast";
 import type { ProductFdsDraft, ProductRegistrationView } from "@/types/ProductRegistration";
 import type { CadastroProdutoForm, FdsAnalysis } from "@/types/Produto";
@@ -44,6 +45,16 @@ function readSignature(file: File): Promise<string> {
     reader.readAsText(file.slice(0, 5));
   });
 }
+async function validateFdsFile(next: File) {
+  if (next.size > 10 * 1024 * 1024) throw new Error("O PDF deve ter no máximo 10 MB.");
+  if (
+    !next.size ||
+    !next.name.toLowerCase().endsWith(".pdf") ||
+    (await readSignature(next)) !== "%PDF-"
+  )
+    throw new Error("Escolha um PDF válido da Ficha de Dados de Segurança.");
+}
+
 export default function ProductFdsFlow({
   view,
   product,
@@ -155,32 +166,31 @@ export default function ProductFdsFlow({
     if (locked) return;
     const current = ++selection.current;
     setValidating(true);
-    try {
-      if (next.size > 10 * 1024 * 1024) throw new Error("O PDF deve ter no máximo 10 MB.");
-      if (
-        !next.size ||
-        !next.name.toLowerCase().endsWith(".pdf") ||
-        (await readSignature(next)) !== "%PDF-"
-      )
-        throw new Error("Escolha um PDF válido da Ficha de Dados de Segurança.");
-      if (current !== selection.current) return;
-      setFile(next);
-      toast.close("product-file-error");
-      extraction.reset();
-      onEdit();
-    } catch (failure) {
-      if (current === selection.current)
-        toast.add({
-          id: "product-file-error",
-          type: "error",
-          priority: "high",
-          title: "Não foi possível usar o PDF",
-          description:
-            failure instanceof Error ? failure.message : "Não foi possível ler o arquivo.",
-        });
-    } finally {
-      if (current === selection.current) setValidating(false);
-    }
+    await withFinally(
+      async () => {
+        try {
+          await validateFdsFile(next);
+          if (current !== selection.current) return;
+          setFile(next);
+          toast.close("product-file-error");
+          extraction.reset();
+          onEdit();
+        } catch (failure) {
+          if (current === selection.current)
+            toast.add({
+              id: "product-file-error",
+              type: "error",
+              priority: "high",
+              title: "Não foi possível usar o PDF",
+              description:
+                failure instanceof Error ? failure.message : "Não foi possível ler o arquivo.",
+            });
+        }
+      },
+      () => {
+        if (current === selection.current) setValidating(false);
+      },
+    );
   }
   async function extract() {
     if (!file || operation.current || busy || validating) return;
@@ -215,32 +225,37 @@ export default function ProductFdsFlow({
     if (locked || removalOperation.current) return;
     removalOperation.current = true;
     setRemovalPending(true);
-    try {
-      if (analysisRef.current) await discardFdsAnalysis(analysisRef.current.analiseId);
-      analysisRef.current = null;
-      analyzedFile.current = null;
-      selection.current++;
-      onDraftChange({
-        file: null,
-        analyzedFile: null,
-        selectionAnalyzed: false,
-        analysis: null,
-        corrections: [],
-      });
-      setRemoving(false);
-      extraction.reset();
-      onEdit();
-    } catch (failure) {
-      toast.add({
-        type: "error",
-        priority: "high",
-        title: "Não foi possível remover a FDS",
-        description: fdsError(failure) ?? "Tente novamente.",
-      });
-    } finally {
-      removalOperation.current = false;
-      setRemovalPending(false);
-    }
+    await withFinally(
+      async () => {
+        try {
+          if (analysisRef.current) await discardFdsAnalysis(analysisRef.current.analiseId);
+          analysisRef.current = null;
+          analyzedFile.current = null;
+          selection.current++;
+          onDraftChange({
+            file: null,
+            analyzedFile: null,
+            selectionAnalyzed: false,
+            analysis: null,
+            corrections: [],
+          });
+          setRemoving(false);
+          extraction.reset();
+          onEdit();
+        } catch (failure) {
+          toast.add({
+            type: "error",
+            priority: "high",
+            title: "Não foi possível remover a FDS",
+            description: fdsError(failure) ?? "Tente novamente.",
+          });
+        }
+      },
+      () => {
+        removalOperation.current = false;
+        setRemovalPending(false);
+      },
+    );
   }
 
   const picker = (
@@ -260,197 +275,338 @@ export default function ProductFdsFlow({
       className={`${view === "details" ? "hidden" : "flex"} min-h-0 flex-1 flex-col gap-3.5 outline-none`}
     >
       {view === "analyzing" ? (
-        <div
-          role="status"
-          aria-label="Análise da FDS em andamento"
-          className="flex min-h-[178px] flex-col items-center justify-center gap-5 py-8"
-        >
-          <span className="flex h-[90px] w-[100px] items-center justify-center rounded-full bg-secondary-primary">
-            <FileText className="size-8" aria-hidden="true" />
-          </span>
-          <div
-            role="progressbar"
-            aria-label="Analisando documento"
-            className="h-1.5 w-full max-w-[360px] overflow-hidden rounded-full bg-secondary-primary"
-          >
-            <div className="h-full w-1/3 rounded-full bg-brand-accent motion-safe:animate-pulse" />
-          </div>
-        </div>
+        <FdsAnalyzingStatus />
       ) : (
         <>
-          <ScrollArea
-            maskHeight={0}
-            className="-mx-2 flex min-h-0 flex-1 flex-col"
-            viewportClassName="h-auto min-h-0 flex-1 overscroll-contain px-2 [&>div]:block!"
-          >
-            {view === "upload" ? (
-              <div className="grid min-w-0 items-center gap-6 @min-[720px]:grid-cols-[292px_minmax(0,1fr)] @min-[720px]:gap-[68px]">
-                <FdsProductPreview product={product} />
-                <div className="flex min-w-0 flex-col gap-2.5">
-                  <h3 className="max-w-[365px] text-2xl leading-none font-medium">
-                    Adicionar Ficha de Dados de Segurança (FDS)
-                  </h3>
-                  <p className="mt-5 text-[15px] leading-tight text-muted-foreground">
-                    Anexe abaixo a documentação padronizada conforme a ABNT NBR 14725, cuja
-                    disponibilização é obrigatória de acordo com a Norma Regulamentadora nº 26
-                    (NR-26) do Ministério do Trabalho.
-                  </p>
-                  {picker}
-                </div>
-              </div>
-            ) : view === "replace" ? (
-              picker
-            ) : (
-              analysis && (
-                <ProductFdsReview
-                  analysis={analysis}
-                  corrections={corrections}
-                  disabled={locked}
-                  onCorrect={(index, correction) => {
-                    onDraftChange((current) => ({
-                      ...current,
-                      corrections: [
-                        ...current.corrections.filter((item) => item.indice !== index),
-                        ...(correction ? [correction] : []),
-                      ],
-                    }));
-                    onEdit();
-                  }}
-                />
+          <FdsFlowContent
+            view={view}
+            product={product}
+            picker={picker}
+            analysis={analysis}
+            corrections={corrections}
+            locked={locked}
+            onCorrect={(index, correction) => {
+              onDraftChange((current) => ({
+                ...current,
+                corrections: [
+                  ...current.corrections.filter((item) => item.indice !== index),
+                  ...(correction ? [correction] : []),
+                ],
+              }));
+              onEdit();
+            }}
+          />
+          <FdsFlowFeedback
+            error={error}
+            invalidAnalysis={invalidAnalysis}
+            view={view}
+            locked={locked}
+            onExtract={extract}
+            onEditDetails={() => {
+              onEdit();
+              onViewChange("details");
+            }}
+          />
+          <FdsFlowActions
+            view={view}
+            busy={busy}
+            remaining={remaining}
+            locked={locked}
+            validating={validating}
+            hasFile={!!file}
+            removing={removing}
+            onSubmit={submit}
+            onEditDocument={editDocument}
+            onBack={() => {
+              if (view === "replace") {
+                setFile(analyzedFile.current, true);
+                onViewChange(
+                  analysis ? (analysis.pendencias.length ? "review" : "success") : "upload",
+                );
+              } else onViewChange("details");
+              onEdit();
+            }}
+            onContinue={() => {
+              if (
+                analysis &&
+                draft.selectionAnalyzed &&
+                !invalidAnalysis &&
+                Date.parse(analysis.expiraEm) > Date.now()
               )
-            )}
-          </ScrollArea>
-          {error && !invalidAnalysis && (view === "review" || view === "success") ? (
-            <BasicButton
-              variant="secondary"
-              size="compact"
-              disabled={locked}
-              onClick={() => {
-                onEdit();
-                onViewChange("details");
-              }}
-            >
-              Editar dados do produto
-            </BasicButton>
-          ) : null}
-          {invalidAnalysis && (
-            <BasicButton variant="secondary" size="compact" disabled={locked} onClick={extract}>
-              Reanalisar FDS
-            </BasicButton>
-          )}
-          <div
-            className={cn(
-              "flex shrink-0 gap-2.5",
-              view !== "review" && view !== "success" && "pt-3",
-            )}
-          >
-            {view === "review" ? (
-              <>
-                <BasicButton
-                  variant="secondary"
-                  className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
-                  disabled={locked}
-                  onClick={submit}
-                >
-                  {busy ? "Adicionando…" : remaining ? "Adicionar mesmo assim" : "Continuar"}
-                </BasicButton>
-                <BasicButton
-                  className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
-                  disabled={locked}
-                  onClick={editDocument}
-                >
-                  Substituir documento corrigido
-                </BasicButton>
-              </>
-            ) : view === "success" ? (
-              <BasicButton
-                className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
-                disabled={locked}
-                onClick={submit}
-              >
-                {busy ? "Adicionando…" : "Continuar"}
-              </BasicButton>
-            ) : (
-              <>
-                <BasicButton
-                  variant="secondary"
-                  className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
-                  disabled={locked || validating}
-                  onClick={() => {
-                    if (view === "replace") {
-                      setFile(analyzedFile.current, true);
-                      onViewChange(
-                        analysis ? (analysis.pendencias.length ? "review" : "success") : "upload",
-                      );
-                    } else onViewChange("details");
-                    onEdit();
-                  }}
-                >
-                  Voltar
-                </BasicButton>
-                <BasicButton
-                  className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
-                  disabled={locked || validating || !file || removing}
-                  onClick={() => {
-                    if (
-                      analysis &&
-                      draft.selectionAnalyzed &&
-                      !invalidAnalysis &&
-                      Date.parse(analysis.expiraEm) > Date.now()
-                    )
-                      onViewChange(analysis.pendencias.length ? "review" : "success");
-                    else extract();
-                  }}
-                >
-                  {validating
-                    ? "Verificando PDF…"
-                    : view === "replace"
-                      ? "Adicionar produto"
-                      : "Continuar"}
-                </BasicButton>
-              </>
-            )}
-          </div>
+                onViewChange(analysis.pendencias.length ? "review" : "success");
+              else extract();
+            }}
+          />
         </>
       )}
-      <Dialog
+      <RemoveFdsDialog
         open={removing}
+        removalPending={removalPending}
         onOpenChange={(next) => {
           if (!removalOperation.current) setRemoving(next);
         }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="flex w-[498px] max-w-[calc(100%-2rem)] flex-col gap-6 rounded-[36px] bg-surface-background p-8 sm:max-w-[498px]"
-        >
-          <DialogTitle className="text-xl">Remover a FDS selecionada?</DialogTitle>
-          <DialogDescription>
-            Você poderá escolher outro documento para continuar o cadastro.
-          </DialogDescription>
-          <div className="flex gap-3">
-            <BasicButton
-              variant="secondary"
-              size="compact"
-              className="min-w-0 flex-1"
-              disabled={removalPending}
-              onClick={() => setRemoving(false)}
-            >
-              Voltar
-            </BasicButton>
-            <BasicButton
-              variant="critical"
-              size="compact"
-              className="min-w-0 flex-1"
-              disabled={removalPending}
-              onClick={() => {
-                void removeFile();
-              }}
-            >
-              Remover arquivo
-            </BasicButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onRemove={removeFile}
+      />
     </div>
+  );
+}
+
+function FdsFlowContent({
+  view,
+  product,
+  picker,
+  analysis,
+  corrections,
+  locked,
+  onCorrect,
+}: {
+  view: ProductRegistrationView;
+  product: CadastroProdutoForm;
+  picker: ReactNode;
+  analysis: FdsAnalysis | null;
+  corrections: ProductFdsDraft["corrections"];
+  locked: boolean;
+  onCorrect: (index: number, correction: ProductFdsDraft["corrections"][number] | null) => void;
+}) {
+  return (
+    <ScrollArea
+      maskHeight={0}
+      className="-mx-2 flex min-h-0 flex-1 flex-col"
+      viewportClassName="h-auto min-h-0 flex-1 overscroll-contain px-2 [&>div]:block!"
+    >
+      {view === "upload" ? (
+        <div className="grid min-w-0 items-center gap-6 @min-[720px]:grid-cols-[292px_minmax(0,1fr)] @min-[720px]:gap-[68px]">
+          <FdsProductPreview product={product} />
+          <div className="flex min-w-0 flex-col gap-2.5">
+            <h3 className="max-w-[365px] text-2xl leading-none font-medium">
+              Adicionar Ficha de Dados de Segurança (FDS)
+            </h3>
+            <p className="mt-5 text-[15px] leading-tight text-muted-foreground">
+              Anexe abaixo a documentação padronizada conforme a ABNT NBR 14725, cuja
+              disponibilização é obrigatória de acordo com a Norma Regulamentadora nº 26 (NR-26) do
+              Ministério do Trabalho.
+            </p>
+            {picker}
+          </div>
+        </div>
+      ) : view === "replace" ? (
+        picker
+      ) : (
+        analysis && (
+          <ProductFdsReview
+            analysis={analysis}
+            corrections={corrections}
+            disabled={locked}
+            onCorrect={onCorrect}
+          />
+        )
+      )}
+    </ScrollArea>
+  );
+}
+
+function FdsFlowActions({
+  view,
+  busy,
+  remaining,
+  locked,
+  validating,
+  hasFile,
+  removing,
+  onSubmit,
+  onEditDocument,
+  onBack,
+  onContinue,
+}: {
+  view: ProductRegistrationView;
+  busy: boolean;
+  remaining: number;
+  locked: boolean;
+  validating: boolean;
+  hasFile: boolean;
+  removing: boolean;
+  onSubmit: () => void;
+  onEditDocument: () => void;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <div className={cn("flex shrink-0 gap-2.5", view !== "review" && view !== "success" && "pt-3")}>
+      {view === "review" ? (
+        <>
+          <BasicButton
+            variant="secondary"
+            className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
+            disabled={locked}
+            onClick={onSubmit}
+          >
+            {busy ? "Adicionando…" : remaining ? "Adicionar mesmo assim" : "Continuar"}
+          </BasicButton>
+          <BasicButton
+            className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
+            disabled={locked}
+            onClick={onEditDocument}
+          >
+            Substituir documento corrigido
+          </BasicButton>
+        </>
+      ) : view === "success" ? (
+        <BasicButton
+          className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
+          disabled={locked}
+          onClick={onSubmit}
+        >
+          {busy ? "Adicionando…" : "Continuar"}
+        </BasicButton>
+      ) : (
+        <FdsUploadActions
+          view={view}
+          locked={locked}
+          validating={validating}
+          hasFile={hasFile}
+          removing={removing}
+          onBack={onBack}
+          onContinue={onContinue}
+        />
+      )}
+    </div>
+  );
+}
+
+function RemoveFdsDialog({
+  open,
+  removalPending,
+  onOpenChange,
+  onRemove,
+}: {
+  open: boolean;
+  removalPending: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRemove: () => Promise<void>;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex w-[498px] max-w-[calc(100%-2rem)] flex-col gap-6 rounded-[36px] bg-surface-background p-8 sm:max-w-[498px]"
+      >
+        <DialogTitle className="text-xl">Remover a FDS selecionada?</DialogTitle>
+        <DialogDescription>
+          Você poderá escolher outro documento para continuar o cadastro.
+        </DialogDescription>
+        <div className="flex gap-3">
+          <BasicButton
+            variant="secondary"
+            size="compact"
+            className="min-w-0 flex-1"
+            disabled={removalPending}
+            onClick={() => onOpenChange(false)}
+          >
+            Voltar
+          </BasicButton>
+          <BasicButton
+            variant="critical"
+            size="compact"
+            className="min-w-0 flex-1"
+            disabled={removalPending}
+            onClick={() => {
+              void onRemove();
+            }}
+          >
+            Remover arquivo
+          </BasicButton>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FdsAnalyzingStatus() {
+  return (
+    <div
+      role="status"
+      aria-label="Análise da FDS em andamento"
+      className="flex min-h-[178px] flex-col items-center justify-center gap-5 py-8"
+    >
+      <span className="flex h-[90px] w-[100px] items-center justify-center rounded-full bg-secondary-primary">
+        <FileText className="size-8" aria-hidden="true" />
+      </span>
+      <div
+        role="progressbar"
+        aria-label="Analisando documento"
+        className="h-1.5 w-full max-w-[360px] overflow-hidden rounded-full bg-secondary-primary"
+      >
+        <div className="h-full w-1/3 rounded-full bg-brand-accent motion-safe:animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+function FdsUploadActions({
+  view,
+  locked,
+  validating,
+  hasFile,
+  removing,
+  onBack,
+  onContinue,
+}: {
+  view: ProductRegistrationView;
+  locked: boolean;
+  validating: boolean;
+  hasFile: boolean;
+  removing: boolean;
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  return (
+    <>
+      <BasicButton
+        variant="secondary"
+        className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
+        disabled={locked || validating}
+        onClick={onBack}
+      >
+        Voltar
+      </BasicButton>
+      <BasicButton
+        className="min-h-14 min-w-0 flex-1 text-xl leading-[1.2]"
+        disabled={locked || validating || !hasFile || removing}
+        onClick={onContinue}
+      >
+        {validating ? "Verificando PDF…" : view === "replace" ? "Adicionar produto" : "Continuar"}
+      </BasicButton>
+    </>
+  );
+}
+
+function FdsFlowFeedback({
+  error,
+  invalidAnalysis,
+  view,
+  locked,
+  onExtract,
+  onEditDetails,
+}: {
+  error: unknown;
+  invalidAnalysis: boolean;
+  view: ProductRegistrationView;
+  locked: boolean;
+  onExtract: () => void;
+  onEditDetails: () => void;
+}) {
+  return (
+    <>
+      {error && !invalidAnalysis && (view === "review" || view === "success") ? (
+        <BasicButton variant="secondary" size="compact" disabled={locked} onClick={onEditDetails}>
+          Editar dados do produto
+        </BasicButton>
+      ) : null}
+      {invalidAnalysis && (
+        <BasicButton variant="secondary" size="compact" disabled={locked} onClick={onExtract}>
+          Reanalisar FDS
+        </BasicButton>
+      )}
+    </>
   );
 }

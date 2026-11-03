@@ -143,9 +143,8 @@ describe("SignupForm", () => {
     expect(screen.getByLabelText("Senha")).toHaveValue("");
     await user.type(screen.getByLabelText("Senha"), "private-password123");
     expect(JSON.parse(localStorage.getItem("quimia:signup-draft")!)).toEqual({
-      nome: "Acme",
-      cnpj: "11.222.333/0001-81",
-      email: "acme@example.com",
+      _versao: 1,
+      dados: { nome: "Acme", cnpj: "11.222.333/0001-81", email: "acme@example.com" },
     });
   });
 

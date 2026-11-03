@@ -16,6 +16,10 @@ const produto = {
 };
 
 function respond(config: InternalAxiosRequestConfig, data: unknown, status = 200) {
+  if (config.url?.endsWith("/assincronas") && data && typeof data === "object" && "analiseId" in data) {
+    data = { id: "job-1", status: "concluida", analise: data, codigo: null, detail: null };
+    status = 202;
+  }
   return Promise.resolve({
     config,
     data,
@@ -64,7 +68,7 @@ describe("EmpresaProduto service", () => {
       compostos: [],
     };
     api.defaults.adapter = (config) => {
-      expect(config.url).toBe("/empresas/me/produtos/fds/analises");
+      expect(config.url).toBe("/empresas/me/produtos/fds/analises/assincronas");
       expect(config.signal).toBe(controller.signal);
       expect(Object.fromEntries((config.data as FormData).entries())).toEqual({ fds });
       return respond(config, analysis);

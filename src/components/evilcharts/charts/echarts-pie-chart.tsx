@@ -4,10 +4,9 @@ import { applyChartTypography, observeChartAppearance } from "@/lib/chart-typogr
 
 import {
   resolveTooltipPosition,
-  roundnessClass,
   tooltipIndicatorHtml,
   tooltipRow,
-  tooltipVariantClass,
+  tooltipShell,
   type TooltipPosition,
   type TooltipRoundness,
   type TooltipVariant,
@@ -661,9 +660,7 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
       dimmed,
     });
 
-    return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[tooltipSlot.roundness]} ${tooltipVariantClass[tooltipSlot.variant]}">
-      <div class="grid gap-1.5">${row}</div>
-    </div>`;
+    return tooltipShell({ label: "", body: row, roundness: tooltipSlot.roundness, variant: tooltipSlot.variant });
   };
 }
 
@@ -1222,7 +1219,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
       data-chart={chartId}
       className={`relative flex flex-col text-xs ${className ?? ""}`}
     >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
+      <style>{css}</style>
 
       <div className="relative min-h-0 w-full flex-1">
         {backgroundSlot.present && !isLoading && (

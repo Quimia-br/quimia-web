@@ -998,12 +998,12 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
 
         return tooltipRow({
           indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
+          rowKey: key,
           labelText,
           valueText: value,
           dimmed,
         });
-      })
-      .join("");
+      });
 
     return tooltipShell({
       label,
@@ -1679,8 +1679,147 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     });
   }, [getLive]);
 
+  const buildOption = useBarChartOption({
+    getLive,
+    data,
+    config,
+    bars,
+    seriesKeys,
+    categoryKey,
+    animationType,
+    barRadius,
+    isHorizontal,
+    isStacked,
+    isPercent,
+    selectedDataKey,
+    hasSelection,
+    showGrid,
+    categorySlot,
+    valueSlot,
+    tooltipSlot,
+    legendSlot,
+    isLoading,
+    loadingBars,
+    brushEnabled,
+    brushHeight,
+    barGap,
+    barCategoryGap,
+    maxHighlightIndex,
+  });
+
+  useBarChartInstance({
+    renderer,
+    mountRef,
+    containerRef,
+    echartsRef,
+    getLive,
+    syncBrushOverlayNow,
+  });
+
+  useBarChartSync({
+    renderer,
+    echartsRef,
+    containerRef,
+    getLive,
+    buildOption,
+    chartOptions,
+    isLoading,
+    animation,
+    effectiveAnimation,
+    shouldReduceMotion,
+    config,
+    seriesKeys,
+    dataLength: data.length,
+    bars,
+    isHorizontal,
+    barCategoryGap,
+    syncBrushOverlayNow,
+  });
+
+  useBarChartDefaultTooltip({
+    renderer,
+    echartsRef,
+    tooltipSlot,
+    isLoading,
+    dataLength: data.length,
+    seriesKeysLength: seriesKeys.length,
+  });
+
+  useBarChartShimmer({ renderer, echartsRef, getLive, isLoading, loadingBars });
+
+  return (
+    <div
+      ref={containerRef}
+      data-chart={chartId}
+      className={`relative flex flex-col text-xs ${className ?? ""}`}
+    >
+      <style>{css}</style>
+
+      <div className="relative min-h-0 w-full flex-1">
+        <div ref={mountRef} className="h-full min-h-0 w-full" />
+      </div>
+
+      <BarChartOverlays
+        legendSlot={legendSlot}
+        seriesKeys={seriesKeys}
+        config={config}
+        selectedDataKey={selectedDataKey}
+        onToggle={toggleSelection}
+        isLoading={isLoading}
+        shouldReduceMotion={shouldReduceMotion}
+        brushEnabled={brushEnabled}
+        brushHeight={brushHeight}
+      />
+    </div>
+  );
+}
+
+type BarChartOptionParams = Omit<
+  OptionBuildContext,
+  | "resolved"
+  | "categories"
+  | "brushRange"
+  | "loadingData"
+  | "valuePxPerUnit"
+  | "barWidthPx"
+  | "expand"
+  | "showBrush"
+> & {
+  getLive: () => LiveState;
+  categoryKey: string;
+  loadingBars: number;
+  brushEnabled: boolean;
+};
+
+function useBarChartOption({
+  getLive,
+  data,
+  config,
+  bars,
+  seriesKeys,
+  categoryKey,
+  animationType,
+  barRadius,
+  isHorizontal,
+  isStacked,
+  isPercent,
+  selectedDataKey,
+  hasSelection,
+  showGrid,
+  categorySlot,
+  valueSlot,
+  tooltipSlot,
+  legendSlot,
+  isLoading,
+  loadingBars,
+  brushEnabled,
+  brushHeight,
+  barGap,
+  barCategoryGap,
+  maxHighlightIndex,
+}: BarChartOptionParams) {
   // ── Option builder ─────────────────────────────────────────────────────────
-  const buildOption = useCallback((): EChartsOption => {
+  return useCallback((): EChartsOption => {
     const live = getLive();
     const resolved = live.resolved;
     if (!resolved) return {};
@@ -1765,72 +1904,6 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     barCategoryGap,
     maxHighlightIndex,
   ]);
-
-  useBarChartInstance({
-    renderer,
-    mountRef,
-    containerRef,
-    echartsRef,
-    getLive,
-    syncBrushOverlayNow,
-  });
-
-  useBarChartSync({
-    renderer,
-    echartsRef,
-    containerRef,
-    getLive,
-    buildOption,
-    chartOptions,
-    isLoading,
-    animation,
-    effectiveAnimation,
-    shouldReduceMotion,
-    config,
-    seriesKeys,
-    dataLength: data.length,
-    bars,
-    isHorizontal,
-    barCategoryGap,
-    syncBrushOverlayNow,
-  });
-
-  useBarChartDefaultTooltip({
-    renderer,
-    echartsRef,
-    tooltipSlot,
-    isLoading,
-    dataLength: data.length,
-    seriesKeysLength: seriesKeys.length,
-  });
-
-  useBarChartShimmer({ renderer, echartsRef, getLive, isLoading, loadingBars });
-
-  return (
-    <div
-      ref={containerRef}
-      data-chart={chartId}
-      className={`relative flex flex-col text-xs ${className ?? ""}`}
-    >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
-
-      <div className="relative min-h-0 w-full flex-1">
-        <div ref={mountRef} className="h-full min-h-0 w-full" />
-      </div>
-
-      <BarChartOverlays
-        legendSlot={legendSlot}
-        seriesKeys={seriesKeys}
-        config={config}
-        selectedDataKey={selectedDataKey}
-        onToggle={toggleSelection}
-        isLoading={isLoading}
-        shouldReduceMotion={shouldReduceMotion}
-        brushEnabled={brushEnabled}
-        brushHeight={brushHeight}
-      />
-    </div>
-  );
 }
 
 type BarChartOverlaysProps = {

@@ -11,7 +11,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { ToastProvider, ToastViewport } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-token";
-import { pendingAnalysis } from "../fixtures/fds";
+import { pendingAnalysis, registeredProduct } from "../fixtures/fds";
 import {
   emptyProductDraft,
   loadProductDraft,
@@ -85,9 +85,9 @@ beforeEach(() => {
     config,
     data: config.url?.endsWith("/tipos")
       ? ["alvejante"]
-      : config.url?.endsWith("/analises")
-        ? pendingAnalysis
-        : { situacao: "criado", produto: { id: 42 } },
+      : config.url?.endsWith("/assincronas")
+        ? { id: "job-1", status: "concluida", analise: pendingAnalysis, codigo: null, detail: null }
+        : { situacao: "criado", produto: registeredProduct },
     status: 200,
     statusText: "OK",
     headers: new AxiosHeaders(),
@@ -122,7 +122,7 @@ describe("product draft recovery and toasts", () => {
           headers: new AxiosHeaders(),
           data: { itens: [], pagina: 0, tamanho: 20, totalItens: 0, totalPaginas: 0 },
         };
-      if (config.url?.endsWith("/analises"))
+      if (config.url?.endsWith("/assincronas"))
         throw new AxiosError("Network Error", "ERR_NETWORK", config);
       return adapter(config);
     };
@@ -205,7 +205,7 @@ describe("product draft recovery and toasts", () => {
   it("renders API failures as a dismissible toast and retains the PDF without a red error panel", async () => {
     const adapter = api.defaults.adapter as import("axios").AxiosAdapter;
     api.defaults.adapter = async (config) => {
-      if (config.url?.endsWith("/analises"))
+      if (config.url?.endsWith("/assincronas"))
         throw new AxiosError("Bad Gateway", "ERR_BAD_RESPONSE", config, undefined, {
           config,
           status: 502,
@@ -295,7 +295,7 @@ describe("product draft recovery and toasts", () => {
         "O envio não foi iniciado",
       ),
     );
-    expect(analyze.mock.calls.some(([config]) => config.url?.endsWith("/analises"))).toBe(false);
+    expect(analyze.mock.calls.some(([config]) => config.url?.endsWith("/assincronas"))).toBe(false);
     expect(screen.getByText("minha-fds.pdf")).toBeInTheDocument();
   });
 });

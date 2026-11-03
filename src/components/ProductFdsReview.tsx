@@ -23,10 +23,6 @@ interface CardProps {
   onCorrect: (correction: FdsCorrection | null) => void;
 }
 function PendingCard({ pending, correction, disabled, onCorrect }: CardProps) {
-  const id = useId();
-  const [editing, setEditing] = useState(false);
-  const [unit, setUnit] = useState("");
-  const [error, setError] = useState<string>();
   const resolved = !!correction;
   return (
     <article
@@ -94,80 +90,94 @@ function PendingCard({ pending, correction, disabled, onCorrect }: CardProps) {
           Unidade de concentração: {correction.unidadeConcentracao}
         </p>
       )}
-      {editing ? (
-        <form
-          className="flex flex-col gap-3"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            const parsed = concentrationUnitSchema.safeParse(unit);
-            if (!parsed.success) {
-              setError(parsed.error.issues[0]?.message);
-              return;
-            }
-            if (pending.composto)
-              onCorrect({ indice: pending.composto.indice, unidadeConcentracao: parsed.data });
-            setEditing(false);
+      <PendingCorrection
+        pending={pending}
+        correction={correction}
+        disabled={disabled}
+        onCorrect={onCorrect}
+      />
+    </article>
+  );
+}
+
+function PendingCorrection({ pending, correction, disabled, onCorrect }: CardProps) {
+  const id = useId();
+  const [editing, setEditing] = useState(false);
+  const [unit, setUnit] = useState("");
+  const [error, setError] = useState<string>();
+  const resolved = !!correction;
+  return editing ? (
+    <form
+      className="flex flex-col gap-3"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        const parsed = concentrationUnitSchema.safeParse(unit);
+        if (!parsed.success) {
+          setError(parsed.error.issues[0]?.message);
+          return;
+        }
+        if (pending.composto)
+          onCorrect({ indice: pending.composto.indice, unidadeConcentracao: parsed.data });
+        setEditing(false);
+        setError(undefined);
+      }}
+    >
+      <Field data-invalid={!!error}>
+        <FieldLabel htmlFor={id}>Unidade de concentração</FieldLabel>
+        <Input
+          id={id}
+          value={unit}
+          maxLength={20}
+          placeholder="Ex.: %"
+          disabled={disabled}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(event) => {
+            setUnit(event.target.value);
             setError(undefined);
           }}
-        >
-          <Field data-invalid={!!error}>
-            <FieldLabel htmlFor={id}>Unidade de concentração</FieldLabel>
-            <Input
-              id={id}
-              value={unit}
-              maxLength={20}
-              placeholder="Ex.: %"
-              disabled={disabled}
-              aria-invalid={!!error}
-              aria-describedby={error ? `${id}-error` : undefined}
-              onChange={(event) => {
-                setUnit(event.target.value);
-                setError(undefined);
-              }}
-            />
-            {error && <FieldError id={`${id}-error`}>{error}</FieldError>}
-          </Field>
-          <BasicButton
-            type="submit"
-            size="compact"
-            variant="secondary"
-            className="min-h-[42px] text-sm leading-[1.2]"
-            disabled={disabled}
-          >
-            Salvar correção
-          </BasicButton>
-          <BasicButton
-            size="compact"
-            variant="secondary"
-            className="min-h-[42px] text-sm leading-[1.2]"
-            onClick={() => setEditing(false)}
-          >
-            Voltar
-          </BasicButton>
-        </form>
-      ) : pending.corrigivel && pending.composto ? (
-        <BasicButton
-          size="compact"
-          variant="secondary"
-          className="mt-auto min-h-[42px] text-sm leading-[1.2]"
-          disabled={disabled}
-          onClick={() => {
-            if (resolved) onCorrect(null);
-            else {
-              setUnit("");
-              setEditing(true);
-            }
-          }}
-        >
-          {resolved ? "Marcar como pendência" : "Marcar como resolvido"}
-        </BasicButton>
-      ) : (
-        <p className="mt-auto text-sm text-muted-foreground">
-          Este aviso será mantido ao adicionar o produto.
-        </p>
-      )}
-    </article>
+        />
+        {error && <FieldError id={`${id}-error`}>{error}</FieldError>}
+      </Field>
+      <BasicButton
+        type="submit"
+        size="compact"
+        variant="secondary"
+        className="min-h-[42px] text-sm leading-[1.2]"
+        disabled={disabled}
+      >
+        Salvar correção
+      </BasicButton>
+      <BasicButton
+        size="compact"
+        variant="secondary"
+        className="min-h-[42px] text-sm leading-[1.2]"
+        onClick={() => setEditing(false)}
+      >
+        Voltar
+      </BasicButton>
+    </form>
+  ) : pending.corrigivel && pending.composto ? (
+    <BasicButton
+      size="compact"
+      variant="secondary"
+      className="mt-auto min-h-[42px] text-sm leading-[1.2]"
+      disabled={disabled}
+      onClick={() => {
+        if (resolved) onCorrect(null);
+        else {
+          setUnit("");
+          setEditing(true);
+        }
+      }}
+    >
+      {resolved ? "Marcar como pendência" : "Marcar como resolvido"}
+    </BasicButton>
+  ) : (
+    <p className="mt-auto text-sm text-muted-foreground">
+      Este aviso será mantido ao adicionar o produto.
+    </p>
   );
 }
 

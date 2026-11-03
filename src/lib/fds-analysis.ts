@@ -37,6 +37,22 @@ export const fdsAnalysisSchema: z.ZodType<FdsAnalysis> = z.object({
   ),
 });
 
+const analysisJobId = z
+  .string()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Za-z0-9_-]+$/);
+export const fdsAnalysisJobSchema = z.discriminatedUnion("status", [
+  z.object({ id: analysisJobId, status: z.literal("processando") }),
+  z.object({ id: analysisJobId, status: z.literal("concluida"), analise: fdsAnalysisSchema }),
+  z.object({
+    id: analysisJobId,
+    status: z.literal("falhou"),
+    codigo: z.number().int().min(400).max(599),
+    detail: z.string().min(1),
+  }),
+]);
+
 export const concentrationUnitSchema = z
   .string()
   .trim()

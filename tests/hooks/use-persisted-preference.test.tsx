@@ -29,7 +29,7 @@ describe("usePersistedPreference", () => {
     const first = renderHook(useLayout);
     act(() => first.result.current[1]("grid"));
     expect(first.result.current[0]).toBe("grid");
-    expect(localStorage.getItem("layout")).toBe("grid");
+    expect(JSON.parse(localStorage.getItem("layout")!)).toEqual({ _versao: 1, dados: "grid" });
     first.unmount();
     const second = renderHook(useLayout);
     expect(second.result.current[0]).toBe("grid");
@@ -59,7 +59,25 @@ describe("usePersistedPreference", () => {
     act(() => result.current[1]("grid"));
     rerender({ key: "layout-b" });
     act(() => result.current[1]("table"));
-    expect(localStorage.getItem("layout-a")).toBe("grid");
-    expect(localStorage.getItem("layout-b")).toBe("table");
+    expect(JSON.parse(localStorage.getItem("layout-a")!)).toEqual({ _versao: 1, dados: "grid" });
+    expect(JSON.parse(localStorage.getItem("layout-b")!)).toEqual({ _versao: 1, dados: "table" });
   });
+
+  it("migrates a known legacy choice and restores the versioned value on remount", () => {
+    localStorage.setItem("layout", "grid");
+    const view = renderHook(useLayout);
+    expect(view.result.current[0]).toBe("grid");
+    expect(JSON.parse(localStorage.getItem("layout")!)).toEqual({ _versao: 1, dados: "grid" });
+    view.unmount();
+    expect(renderHook(useLayout).result.current[0]).toBe("grid");
+  });
+
+  it.each(['{"_versao":2,"dados":"grid"}', '{"_versao":1,"dados":false}', "{invalid"])(
+    "discards unsupported or malformed data (%s)",
+    (saved) => {
+      localStorage.setItem("layout", saved);
+      expect(renderHook(useLayout).result.current[0]).toBe("table");
+      expect(localStorage.getItem("layout")).toBeNull();
+    },
+  );
 });

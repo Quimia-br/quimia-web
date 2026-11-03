@@ -39,6 +39,8 @@ import { ScrollArea } from "./ui/scroll-area";
 import ProductFdsFlow, { type FdsFlowHandle, type ProductRegistrationView } from "./ProductFdsFlow";
 import { fdsError } from "@/lib/fds-error";
 
+import { withFinally } from "@/lib/utils/withFinally";
+
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const schema = z.object({
   nome: z
@@ -119,6 +121,117 @@ function ProductCreateDialog({ trigger }: { trigger?: ReactElement }) {
       />
     </ToastProvider>
   );
+}
+
+const reviewDescription =
+  "As pendências presentes no documento podem impactar as misturas que o usuário fará.";
+
+const registrationViews: Record<
+  ProductRegistrationView,
+  { title: string; description: string; width: number }
+> = {
+  details: {
+    title: "Cadastrar novo produto",
+    description: "Preencha as informações do produto abaixo",
+    width: 841,
+  },
+
+  upload: {
+    title: "Cadastrar novo produto",
+    description: "Preencha as informações do produto abaixo",
+    width: 998,
+  },
+
+  analyzing: {
+    title: "Estamos analisando sua FDS",
+    description:
+      "O documento anexado pode apresentar pendências. Por favor, aguarde até que elas sejam apresentadas.",
+    width: 793,
+  },
+
+  replace: { title: "Alterar FDS", description: "Anexe o documento corrigido abaixo", width: 708 },
+
+  review: { title: "Pendências identificadas", description: reviewDescription, width: 793 },
+
+  success: { title: "Pendências identificadas", description: reviewDescription, width: 692 },
+};
+
+function CancelAnalysisDialog({
+  open,
+  discarding,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+
+  discarding: boolean;
+
+  onOpenChange: (open: boolean) => void;
+
+  onConfirm: () => Promise<void>;
+}) {
+  return (
+    <Dialog
+      open={open}
+
+      onOpenChange={(next) => {
+        if (!discarding) onOpenChange(next);
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="flex w-[498px] max-w-[calc(100%-2rem)] flex-col gap-6 rounded-[36px] bg-surface-background p-8 sm:max-w-[498px]"
+      >
+        <div className="flex items-center gap-5">
+          <span className="flex size-[100px] shrink-0 items-center justify-center rounded-full border-3 border-feedback-error bg-secondary-primary text-feedback-error sm:size-[134px]">
+            <TriangleAlert className="size-7" aria-hidden="true" />
+          </span>
+          <div className="flex min-w-0 flex-col gap-2">
+            <DialogTitle className="text-xl leading-tight">
+              Tem certeza que deseja cancelar a análise da FDS?
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-none">
+              Você terá que carregar o documento novamente e o cadastro do produto será cancelado.
+            </DialogDescription>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <BasicButton
+            variant="secondary"
+            size="compact"
+            className="min-h-11 min-w-0 flex-1 py-2 text-sm leading-[1.2] sm:min-h-9"
+            disabled={discarding}
+
+            onClick={() => onOpenChange(false)}
+          >
+            Continuar
+          </BasicButton>
+          <BasicButton
+            variant="critical"
+            size="compact"
+            className="min-h-11 min-w-0 flex-1 py-2 text-sm leading-[1.2] sm:min-h-9"
+            disabled={discarding}
+
+            onClick={onConfirm}
+          >
+            {discarding ? "Cancelando…" : "Cancelar"}
+          </BasicButton>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+async function loadProductTypes(signal: AbortSignal, onError: () => void) {
+  try {
+    const data = await getTypes(signal);
+    if (!data.length) throw new Error("no_product_types");
+    return data;
+  } catch (failure) {
+    if (!axios.isCancel(failure)) onError();
+
+    throw failure;
+  }
 }
 
 function ProductCreateSession({
@@ -234,30 +347,8 @@ function ProductCreateSession({
   }
 
   const reviewing = view === "review" || view === "success";
-  const title = reviewing
-    ? "Pendências identificadas"
-    : view === "analyzing"
-      ? "Estamos analisando sua FDS"
-      : view === "replace"
-        ? "Alterar FDS"
-        : "Cadastrar novo produto";
-  const description = reviewing
-    ? "As pendências presentes no documento podem impactar as misturas que o usuário fará."
-    : view === "analyzing"
-      ? "O documento anexado pode apresentar pendências. Por favor, aguarde até que elas sejam apresentadas."
-      : view === "replace"
-        ? "Anexe o documento corrigido abaixo"
-        : "Preencha as informações do produto abaixo";
-  const width =
-    view === "upload"
-      ? 998
-      : view === "success"
-        ? 692
-        : view === "replace"
-          ? 708
-          : reviewing || view === "analyzing"
-            ? 793
-            : 841;
+
+  const { title, description, width } = registrationViews[view];
 
   return (
     <>
@@ -332,62 +423,30 @@ function ProductCreateSession({
           )}
         </DialogContent>
       </Dialog>
-      <Dialog
+      <CancelAnalysisDialog
         open={confirmCancel}
-        onOpenChange={(next) => {
-          if (!discarding) setConfirmCancel(next);
+
+        discarding={discarding}
+
+        onOpenChange={setConfirmCancel}
+
+        onConfirm={async () => {
+          setDiscarding(true);
+
+          await withFinally(
+            async () => {
+              try {
+                await flowRef.current?.discard();
+                setConfirmCancel(false);
+                clearDraft();
+              } catch {
+                cleanupError();
+              }
+            },
+            () => setDiscarding(false),
+          );
         }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="flex w-[498px] max-w-[calc(100%-2rem)] flex-col gap-6 rounded-[36px] bg-surface-background p-8 sm:max-w-[498px]"
-        >
-          <div className="flex items-center gap-5">
-            <span className="flex size-[100px] shrink-0 items-center justify-center rounded-full border-3 border-feedback-error bg-secondary-primary text-feedback-error sm:size-[134px]">
-              <TriangleAlert className="size-7" aria-hidden="true" />
-            </span>
-            <div className="flex min-w-0 flex-col gap-2">
-              <DialogTitle className="text-xl leading-tight">
-                Tem certeza que deseja cancelar a análise da FDS?
-              </DialogTitle>
-              <DialogDescription className="text-sm leading-none">
-                Você terá que carregar o documento novamente e o cadastro do produto será cancelado.
-              </DialogDescription>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <BasicButton
-              variant="secondary"
-              size="compact"
-              className="min-h-11 min-w-0 flex-1 py-2 text-sm leading-[1.2] sm:min-h-9"
-              disabled={discarding}
-              onClick={() => setConfirmCancel(false)}
-            >
-              Continuar
-            </BasicButton>
-            <BasicButton
-              variant="critical"
-              size="compact"
-              className="min-h-11 min-w-0 flex-1 py-2 text-sm leading-[1.2] sm:min-h-9"
-              disabled={discarding}
-              onClick={async () => {
-                setDiscarding(true);
-                try {
-                  await flowRef.current?.discard();
-                  setConfirmCancel(false);
-                  clearDraft();
-                } catch {
-                  cleanupError();
-                } finally {
-                  setDiscarding(false);
-                }
-              }}
-            >
-              {discarding ? "Cancelando…" : "Cancelar"}
-            </BasicButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+      />
     </>
   );
 }
@@ -426,22 +485,17 @@ function ProductCreateForm({
   const toast = useToast();
   const types = useQuery({
     queryKey: ["product-types", sessionVersion],
-    queryFn: async ({ signal }) => {
-      try {
-        const data = await getTypes(signal);
-        if (!data.length) throw new Error("no_product_types");
-        return data;
-      } catch (failure) {
-        if (!axios.isCancel(failure))
-          toast.add({
-            type: "error",
-            priority: "high",
-            title: "Não foi possível carregar os tipos de produto",
-            description: "Tente novamente para continuar o cadastro.",
-          });
-        throw failure;
-      }
-    },
+
+    queryFn: ({ signal }) =>
+      loadProductTypes(signal, () => {
+        toast.add({
+          type: "error",
+          priority: "high",
+          title: "Não foi possível carregar os tipos de produto",
+          description: "Tente novamente para continuar o cadastro.",
+        });
+      }),
+
     staleTime: Infinity,
     retry: false,
   });
@@ -464,8 +518,8 @@ function ProductCreateForm({
     onEdit();
   }
 
-  function validateField(name: keyof ProductFields, value = values[name]) {
-    const result = schema.shape[name].safeParse(value);
+  function validateField(name: keyof ProductFields, value?: string) {
+    const result = schema.shape[name].safeParse(value ?? values[name]);
     setErrors((current) => ({
       ...current,
       [name]: result.success ? undefined : result.error.issues[0]?.message,

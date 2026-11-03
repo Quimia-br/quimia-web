@@ -39,14 +39,18 @@ const validTypes = [
 ];
 
 function respond(config: InternalAxiosRequestConfig, data: unknown, status = 200) {
+  if (config.url?.endsWith("/assincronas") && data && typeof data === "object" && "analiseId" in data) {
+    data = { id: "job-1", status: "concluida", analise: data, codigo: null, detail: null };
+    status = 202;
+  }
   return { config, data, status, statusText: String(status), headers: new AxiosHeaders() };
 }
 
-function setup(typesAdapter?: AxiosAdapter) {
+function setup(typesAdapter?: AxiosAdapter, analysisAdapter?: AxiosAdapter) {
   const productsAdapter = api.defaults.adapter as AxiosAdapter;
   api.defaults.adapter = async (config) => {
-    if (config.url === "/empresas/me/produtos/fds/analises") {
-      return respond(config, cleanAnalysis);
+    if (config.url?.startsWith("/empresas/me/produtos/fds/analises/assincronas")) {
+      return analysisAdapter ? analysisAdapter(config) : respond(config, cleanAnalysis);
     }
     if (config.url === "/empresas/me/produtos/tipos") {
       return typesAdapter ? typesAdapter(config) : respond(config, validTypes);
@@ -103,7 +107,7 @@ async function save(dialog: HTMLElement) {
     });
     await within(dialog).findByText("ficha.pdf");
     await user.click(within(dialog).getByRole("button", { name: "Continuar", exact: true }));
-    await within(dialog).findByText("Nenhuma pendência foi encontrada.");
+    await within(dialog).findByText("Nenhuma pendência foi encontrada.", {}, { timeout: 4000 });
   }
   await user.click(within(dialog).getByRole("button", { name: "Continuar", exact: true }));
 }
@@ -160,8 +164,9 @@ describe("Web product creation", () => {
     await openForm();
     expect(document.querySelectorAll('[data-slot="dialog-content"]')).toHaveLength(1);
   });
-  it("saves with FDS after review and refreshes even a fresh product list", async () => {
+  it("waits for asynchronous FDS review, saves and refreshes even a fresh product list", async () => {
     let saved = false;
+    const analysisRequests: string[] = [];
     api.defaults.adapter = async (config) => {
       if (config.method === "post") {
         expect(config.url).toBe("/empresas/me/produtos");
@@ -187,7 +192,13 @@ describe("Web product creation", () => {
         saved ? { ...emptyPage, itens: [product], totalItens: 1, totalPaginas: 1 } : emptyPage,
       );
     };
-    setup();
+    setup(undefined, async (config) => {
+      analysisRequests.push(`${config.method} ${config.url}`);
+      return respond(config, {
+        id: "job-1", status: config.method === "post" ? "processando" : "concluida",
+        analise: config.method === "post" ? null : cleanAnalysis, codigo: null, detail: null,
+      }, config.method === "post" ? 202 : 200);
+    });
     const dialog = await openForm();
     expect(within(dialog).getByRole("textbox", { name: "Nome" })).toBeVisible();
     await fillRequired(dialog);
@@ -209,6 +220,10 @@ describe("Web product creation", () => {
       ),
     ).toBeInTheDocument();
     expect(await screen.findByText("Produto adicionado com sucesso!")).toBeInTheDocument();
+    expect(analysisRequests).toEqual([
+      "post /empresas/me/produtos/fds/analises/assincronas",
+      "get /empresas/me/produtos/fds/analises/assincronas/job-1",
+    ]);
     expect(
       screen.queryByRole("heading", { name: "Nenhum produto foi adicionado ainda." }),
     ).not.toBeInTheDocument();

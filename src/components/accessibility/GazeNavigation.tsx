@@ -136,7 +136,7 @@ export default function GazeNavigation({ onClose }: { onClose: () => void }) {
         currentSamples = [];
         since = 0;
         if (index < points.length - 1) {
-          index++;
+          index = index + 1;
           setCalibrationIndex(index);
           return;
         }
@@ -217,108 +217,21 @@ export default function GazeNavigation({ onClose }: { onClose: () => void }) {
   }
   return (
     <>
-      <Dialog
+      <GazeSetupDialog
         open={modal}
-        onOpenChange={(open) => {
-          if (!open) onClose();
+        stage={stage}
+        calibrationIndex={calibrationIndex}
+        faceVisible={faceVisible}
+        message={message}
+        onClose={onClose}
+        onStart={() => {
+          setStage("loading");
+          setStarted(true);
         }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className={stage === "calibrating" ? "gaze-calibration" : "assistive-menu"}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <DialogTitle>
-              {stage === "calibrating"
-                ? `Calibrar olhar · ${calibrationIndex + 1} de ${points.length}`
-                : "Navegação pelo olhar"}
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Fechar configuração do olhar"
-              onClick={onClose}
-            >
-              <X aria-hidden="true" />
-            </Button>
-          </div>
-          <DialogDescription>
-            {stage === "calibrating"
-              ? "Olhe para o ponto até ele mudar de lugar. Mantenha a cabeça estável."
-              : "Controle experimental do Quimia pelos olhos, com a tecnologia MediaPipe do Google."}
-          </DialogDescription>
-          {stage === "intro" && (
-            <>
-              <p>
-                Você vai olhar para nove pontos para ajustar o cursor. Use boa iluminação e mantenha
-                a câmera na altura dos olhos.
-              </p>
-              <p>
-                Após calibrar, mantenha o olhar em um botão ou link por 1,5 segundo para
-                selecioná-lo. Use os controles para rolar, pausar ou recalibrar. Escape encerra a
-                sessão.
-              </p>
-              <p>
-                O vídeo é processado no dispositivo e não é gravado nem enviado. A câmera será
-                desligada ao encerrar ou sair desta aba. A precisão varia com a câmera, a posição e
-                a iluminação.
-              </p>
-              <BasicButton
-                icon={<Eye />}
-                onClick={() => {
-                  setStage("loading");
-                  setStarted(true);
-                }}
-              >
-                Permitir câmera e calibrar
-              </BasicButton>
-            </>
-          )}
-          {stage === "loading" && (
-            <p role="status">Preparando o reconhecimento e solicitando acesso à câmera…</p>
-          )}
-          {stage === "calibrating" && (
-            <>
-              <p role="status">
-                {faceVisible
-                  ? "Acompanhe o ponto com os olhos."
-                  : "Posicione o rosto à frente da câmera e mantenha os olhos abertos."}
-              </p>
-              <div
-                aria-hidden="true"
-                className="gaze-calibration-point"
-                style={{
-                  left: `${points[calibrationIndex].x * 100}%`,
-                  top: `${points[calibrationIndex].y * 100}%`,
-                }}
-              />
-            </>
-          )}
-          {stage === "ready" && (
-            <div data-gaze-toolbar className="flex flex-col gap-3">
-              <p>
-                Confira se o cursor acompanha seu olhar. A seleção na página começa quando você
-                escolher “Começar navegação”.
-              </p>
-              <BasicButton onClick={() => actions.current?.resume()}>Começar navegação</BasicButton>
-              <BasicButton variant="secondary" onClick={() => actions.current?.calibrate()}>
-                Calibrar novamente
-              </BasicButton>
-            </div>
-          )}
-          {stage === "error" && (
-            <>
-              <p role="alert">{message}</p>
-              <BasicButton onClick={restart}>Tentar novamente</BasicButton>
-            </>
-          )}
-          {stage !== "calibrating" && (
-            <BasicButton variant="secondary" onClick={onClose}>
-              Encerrar navegação pelo olhar
-            </BasicButton>
-          )}
-        </DialogContent>
-      </Dialog>
+        onResume={() => actions.current?.resume()}
+        onCalibrate={() => actions.current?.calibrate()}
+        onRestart={restart}
+      />
       {(stage === "active" || stage === "paused") &&
         createPortal(
           <section
@@ -416,5 +329,127 @@ export default function GazeNavigation({ onClose }: { onClose: () => void }) {
           document.body,
         )}
     </>
+  );
+}
+
+function GazeSetupDialog({
+  open,
+  stage,
+  calibrationIndex,
+  faceVisible,
+  message,
+  onClose,
+  onStart,
+  onResume,
+  onCalibrate,
+  onRestart,
+}: {
+  open: boolean;
+  stage: Stage;
+  calibrationIndex: number;
+  faceVisible: boolean;
+  message: string;
+  onClose: () => void;
+  onStart: () => void;
+  onResume: () => void;
+  onCalibrate: () => void;
+  onRestart: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className={stage === "calibrating" ? "gaze-calibration" : "assistive-menu"}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <DialogTitle>
+            {stage === "calibrating"
+              ? `Calibrar olhar · ${calibrationIndex + 1} de ${points.length}`
+              : "Navegação pelo olhar"}
+          </DialogTitle>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Fechar configuração do olhar"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" />
+          </Button>
+        </div>
+        <DialogDescription>
+          {stage === "calibrating"
+            ? "Olhe para o ponto até ele mudar de lugar. Mantenha a cabeça estável."
+            : "Controle experimental do Quimia pelos olhos, com a tecnologia MediaPipe do Google."}
+        </DialogDescription>
+        {stage === "intro" && (
+          <>
+            <p>
+              Você vai olhar para nove pontos para ajustar o cursor. Use boa iluminação e mantenha a
+              câmera na altura dos olhos.
+            </p>
+            <p>
+              Após calibrar, mantenha o olhar em um botão ou link por 1,5 segundo para selecioná-lo.
+              Use os controles para rolar, pausar ou recalibrar. Escape encerra a sessão.
+            </p>
+            <p>
+              O vídeo é processado no dispositivo e não é gravado nem enviado. A câmera será
+              desligada ao encerrar ou sair desta aba. A precisão varia com a câmera, a posição e a
+              iluminação.
+            </p>
+            <BasicButton icon={<Eye />} onClick={onStart}>
+              Permitir câmera e calibrar
+            </BasicButton>
+          </>
+        )}
+        {stage === "loading" && (
+          <p role="status">Preparando o reconhecimento e solicitando acesso à câmera…</p>
+        )}
+        {stage === "calibrating" && (
+          <>
+            <p role="status">
+              {faceVisible
+                ? "Acompanhe o ponto com os olhos."
+                : "Posicione o rosto à frente da câmera e mantenha os olhos abertos."}
+            </p>
+            <div
+              aria-hidden="true"
+              className="gaze-calibration-point"
+              style={{
+                left: `${points[calibrationIndex].x * 100}%`,
+                top: `${points[calibrationIndex].y * 100}%`,
+              }}
+            />
+          </>
+        )}
+        {stage === "ready" && (
+          <div data-gaze-toolbar className="flex flex-col gap-3">
+            <p>
+              Confira se o cursor acompanha seu olhar. A seleção na página começa quando você
+              escolher “Começar navegação”.
+            </p>
+            <BasicButton onClick={onResume}>Começar navegação</BasicButton>
+            <BasicButton variant="secondary" onClick={onCalibrate}>
+              Calibrar novamente
+            </BasicButton>
+          </div>
+        )}
+        {stage === "error" && (
+          <>
+            <p role="alert">{message}</p>
+            <BasicButton onClick={onRestart}>Tentar novamente</BasicButton>
+          </>
+        )}
+        {stage !== "calibrating" && (
+          <BasicButton variant="secondary" onClick={onClose}>
+            Encerrar navegação pelo olhar
+          </BasicButton>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -8,7 +8,7 @@ function GenericError() {
       <Logo className="pointer-events-none absolute -bottom-[48rem] -left-[71rem] -z-10 w-[1073px] rotate-[22.29deg] opacity-60 blur-[253.45px]" />
       <div className="flex w-full max-w-[1029px] flex-col items-center gap-8 lg:flex-row lg:gap-[86px]">
         <FeedbackItem
-          icon={<WifiIcon aria-hidden="true" />}
+          icon={<WifiIcon aria-hidden="true" className="size-20" />}
           variant="error"
           size="big"
           className="size-48 shrink-0 ring-5 sm:size-60 lg:size-72"

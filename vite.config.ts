@@ -3,10 +3,19 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import { mkdirSync } from "node:fs";
 import { resolveApiOrigin } from "./src/lib/api-origin.ts";
 import { mediapipeAssets } from "./build/mediapipe-assets.ts";
 
 export default defineConfig(({ mode }) => {
+  if (mode === "test" && process.platform === "win32") {
+    // AppContainer temp paths are private to each subprocess. Vitest's runner
+    // and workers need to read the same transformed modules from disk.
+    const testTempDirectory = path.resolve(import.meta.dirname, "node_modules/.tmp/vitest");
+    mkdirSync(testTempDirectory, { recursive: true });
+    process.env.TEMP = testTempDirectory;
+    process.env.TMP = testTempDirectory;
+  }
   const env = loadEnv(mode, import.meta.dirname, "VITE_");
   const apiOrigin = resolveApiOrigin(env);
   return {
@@ -14,6 +23,7 @@ export default defineConfig(({ mode }) => {
       ignorePatterns: ["docs/**", "tests/COVERAGE.md"],
     },
     test: {
+      pool: "threads",
       environment: "jsdom",
       globals: true,
       include: ["tests/**/*.test.{ts,tsx}"],

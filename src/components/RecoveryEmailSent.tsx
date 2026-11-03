@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import LinkButton from "@/components/LinkButton";
 import MainTitle from "@/components/MainTitle";
 import { forgotPassword } from "@/services/auth";
+import { withFinally } from "@/lib/utils/withFinally";
 
 export default function RecoveryEmailSent({ email }: { email: string }) {
   const [remaining, setRemaining] = useState(60);
@@ -17,14 +18,17 @@ export default function RecoveryEmailSent({ email }: { email: string }) {
     if (pending || remaining > 0) return;
     setPending(true);
     setFailed(false);
-    try {
-      await forgotPassword(email);
-      setRemaining(60);
-    } catch {
-      setFailed(true);
-    } finally {
-      setPending(false);
-    }
+    await withFinally(
+      async () => {
+        try {
+          await forgotPassword(email);
+          setRemaining(60);
+        } catch {
+          setFailed(true);
+        }
+      },
+      () => setPending(false),
+    );
   }
 
   return (

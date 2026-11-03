@@ -848,12 +848,12 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
 
         return tooltipRow({
           indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
+          rowKey: key,
           labelText,
           valueText: value,
           dimmed,
         });
-      })
-      .join("");
+      });
 
     return tooltipShell({
       label,
@@ -2240,6 +2240,57 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
 
   useLineLoadingShimmer({ renderer, echartsRef, liveRef, isLoading, loadingPoints });
 
+  return (
+    <div
+      ref={containerRef}
+      data-chart={chartId}
+      className={`relative flex flex-col text-xs ${className ?? ""}`}
+    >
+      <style>{css}</style>
+
+      <div className="relative min-h-0 w-full flex-1">
+        <div ref={mountRef} className="h-full min-h-0 w-full" />
+      </div>
+
+      <LineChartOverlays
+        legendSlot={legendSlot}
+        seriesKeys={seriesKeys}
+        config={config}
+        selectedDataKey={selectedDataKey}
+        hoveredDataKey={hoveredDataKey}
+        isLoading={isLoading}
+        shouldReduceMotion={shouldReduceMotion}
+        showBrush={showBrush}
+        brushHeight={brushHeight}
+        onToggle={toggleSelection}
+      />
+    </div>
+  );
+}
+
+function LineChartOverlays({
+  legendSlot,
+  seriesKeys,
+  config,
+  selectedDataKey,
+  hoveredDataKey,
+  isLoading,
+  shouldReduceMotion,
+  showBrush,
+  brushHeight,
+  onToggle,
+}: {
+  legendSlot: LegendSlot;
+  seriesKeys: string[];
+  config: ChartConfig;
+  selectedDataKey: string | null;
+  hoveredDataKey: string | null;
+  isLoading: boolean;
+  shouldReduceMotion: boolean | null;
+  showBrush: boolean;
+  brushHeight: number;
+  onToggle: (key: string) => void;
+}) {
   // ── Legend overlay position ──────────────────────────────────────────────────
   // Insets match the Recharts legend's breathing room inside the plot frame.
   const legendStyle: CSSProperties = {
@@ -2255,17 +2306,7 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
   };
 
   return (
-    <div
-      ref={containerRef}
-      data-chart={chartId}
-      className={`relative flex flex-col text-xs ${className ?? ""}`}
-    >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
-
-      <div className="relative min-h-0 w-full flex-1">
-        <div ref={mountRef} className="h-full min-h-0 w-full" />
-      </div>
-
+    <>
       {legendSlot.present && !isLoading && (
         <LegendOverlay
           seriesKeys={seriesKeys}
@@ -2276,7 +2317,7 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
           selectedKey={selectedDataKey}
           hoveredKey={hoveredDataKey}
           isClickable={legendSlot.isClickable}
-          onToggle={toggleSelection}
+          onToggle={onToggle}
           style={legendStyle}
         />
       )}
@@ -2296,7 +2337,7 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
           </LazyMotion>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

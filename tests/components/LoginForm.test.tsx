@@ -184,7 +184,8 @@ describe("LoginForm", () => {
     await user.type(screen.getByLabelText("E-mail"), "new@example.com");
     await user.type(screen.getByLabelText("Senha"), "private-password");
     expect(JSON.parse(localStorage.getItem("quimia:login-draft")!)).toEqual({
-      email: "new@example.com",
+      _versao: 1,
+      dados: { email: "new@example.com" },
     });
   });
 

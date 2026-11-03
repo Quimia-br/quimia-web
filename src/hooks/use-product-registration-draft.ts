@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useReducer } from "react";
+import { productRegistrationReducer } from "@/lib/product-registration-reducer";
 import {
   clearProductDraft,
   emptyProductDraft,
@@ -12,9 +13,13 @@ export function useProductRegistrationDraft(
   ownerId: number | null,
   report: (message: string) => void,
 ) {
-  const [draft, setDraft] = useState<ProductRegistrationDraft>(emptyProductDraft);
-  const [ready, setReady] = useState(ownerId === null);
-  const [recoveryNotice, setRecoveryNotice] = useState<"submission" | null>(null);
+  const [state, dispatch] = useReducer(productRegistrationReducer, {
+    status: ownerId === null ? "ready" : "loading",
+    draft: emptyProductDraft(),
+    recoveryNotice: null,
+  });
+  const { draft, recoveryNotice } = state;
+  const ready = state.status !== "loading";
   const storageWarning = useRef(false);
   const reportRef = useRef(report);
   useEffect(() => {
@@ -26,12 +31,7 @@ export function useProductRegistrationDraft(
     void loadProductDraft(ownerId)
       .then((saved) => {
         if (!active) return;
-        if (saved) {
-          const { recoveryNotice, ...restored } = saved;
-          setDraft(restored);
-          setRecoveryNotice(recoveryNotice ?? null);
-        }
-        setReady(true);
+        dispatch({ type: "restored", draft: saved ?? emptyProductDraft(), recoveryNotice: saved?.recoveryNotice ?? null });
       })
       .catch(() => {
         if (!active) return;
@@ -39,7 +39,7 @@ export function useProductRegistrationDraft(
         reportRef.current(
           "Não foi possível recuperar o rascunho neste navegador. Você pode continuar o cadastro.",
         );
-        setReady(true);
+        dispatch({ type: "storage-failed" });
       });
     return () => {
       active = false;
@@ -56,12 +56,10 @@ export function useProductRegistrationDraft(
     });
   }, [draft, ownerId, ready]);
   const update: UpdateProductDraft = useCallback((patch) => {
-    setDraft((current) =>
-      typeof patch === "function" ? patch(current) : { ...current, ...patch },
-    );
+    dispatch({ type: "update", patch });
   }, []);
   const clear = useCallback(() => {
-    setDraft(emptyProductDraft());
+    dispatch({ type: "clear" });
     if (ownerId !== null)
       void clearProductDraft(ownerId).catch(() => {
         reportRef.current("Não foi possível apagar o rascunho salvo neste navegador.");
@@ -70,7 +68,7 @@ export function useProductRegistrationDraft(
   // Finish writing the operation marker before sending a request with server-side effects.
   const checkpoint = useCallback(
     async (next: ProductRegistrationDraft) => {
-      setDraft(next);
+      dispatch({ type: "checkpoint", draft: next });
       if (ownerId === null) return true;
       try {
         await saveProductDraft(ownerId, next);

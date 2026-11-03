@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { cn } from "cn";
 import useDataDisplay from "@/hooks/use-data-display";
@@ -13,6 +15,9 @@ import { ScrollArea } from "./ui/scroll-area";
 import { TriangleAlert } from "lucide-react";
 import EmptyState from "./EmptyState";
 import ProductEmptyState from "./ProductEmptyState";
+import RowActions from "./RowActions";
+import ProductActionDialog, { type ProductAction } from "./ProductActionDialog";
+import { useAuthStore } from "@/lib/auth-token";
 
 const helper = createColumnHelper<DataTableFeatures, Produto>();
 const columns = helper.columns([
@@ -28,7 +33,12 @@ const columns = helper.columns([
     cell: ({ row }) => (
       <div className="min-w-[92px] md:min-w-[124px]">
         <span className="block max-w-72 whitespace-normal font-medium [overflow-wrap:anywhere]">
-          {row.original.nome}
+          <Link
+            to={`/products/${row.original.id}`}
+            className="rounded underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {row.original.nome}
+          </Link>
         </span>
       </div>
     ),
@@ -53,6 +63,30 @@ const columns = helper.columns([
 const emptyProducts: Produto[] = [];
 
 function ProductsResults() {
+  const sessionVersion = useAuthStore((state) => state.sessionVersion);
+  const [action, setAction] = useState<(ProductAction & { sessionVersion: number }) | null>(null);
+  function selectAction(mode: ProductAction["mode"], product: Produto) {
+    setAction({ mode, product, sessionVersion, trigger: document.activeElement as HTMLElement });
+  }
+  function renderActions(product: Produto, className?: string) {
+    return (
+      <RowActions
+        item={product}
+        itemLabel={product.nome}
+        className={className}
+        onEdit={(item) => selectAction("edit", item)}
+        onDelete={(item) => selectAction("delete", item)}
+      />
+    );
+  }
+  const actionColumns = helper.columns([
+    ...columns,
+    helper.display({
+      id: "actions",
+      header: "Ações",
+      cell: ({ row }) => renderActions(row.original),
+    }),
+  ]);
   const { dataDisplay } = useDataDisplay();
   const { data, isError, isPending, isFetching, refetch } = useProducts();
   const products = data?.itens ?? emptyProducts;
@@ -102,6 +136,7 @@ function ProductsResults() {
                 title={product.nome}
                 description={product.descricao ?? product.tipo?.replaceAll("_", " ") ?? undefined}
                 media={<ProductImage product={product} className="h-[229px] w-full" />}
+                actions={renderActions(product, "flex-col")}
               />
             )}
           />
@@ -109,7 +144,7 @@ function ProductsResults() {
           <DataTable
             data={products}
             isLoading={isPending}
-            columns={columns}
+            columns={actionColumns}
             getRowId={(product) => String(product.id)}
             emptyMessage={<ProductEmptyState />}
             aria-label="Produtos cadastrados"
@@ -117,6 +152,13 @@ function ProductsResults() {
           />
         )}
       </ScrollArea>
+      {action?.sessionVersion === sessionVersion && (
+        <ProductActionDialog
+          key={`${sessionVersion}:${action.mode}:${action.product.id}`}
+          action={action}
+          onClose={() => setAction(null)}
+        />
+      )}
       {data && !isError && (
         <PageIndicator
           totalPages={Math.max(1, data.totalPaginas)}

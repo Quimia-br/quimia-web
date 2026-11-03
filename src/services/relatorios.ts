@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { api } from "@/lib/api";
+import { normalizeServiceError, parseResponse } from "./errors";
+import type { HomeSummary, DauDay, RecommendationDay, TopProduct, UserProfile, Statistics } from "@/types/Relatorios";
+// Transitional re-exports preserve callers while consumers move to domain types.
+export type { HomeSummary, DauDay, RecommendationDay, TopProduct, UserProfile, ReportSeries, ReportCard, Statistics } from "@/types/Relatorios";
 
 const count = z.number().int().nonnegative();
 const optionalNumber = z.number().nullish();
@@ -59,31 +63,26 @@ const homeSummarySchema = z.object({
   }),
 });
 
-export type HomeSummary = z.infer<typeof homeSummarySchema>;
-export type DauDay = z.infer<typeof dauSchema>;
-export type RecommendationDay = z.infer<typeof recommendationSchema>;
-export type TopProduct = z.infer<typeof productSchema>;
-export type UserProfile = z.infer<typeof profileSchema>;
-export type ReportSeries = z.infer<typeof seriesSchema>;
-
 async function readReport<T>(
   path: string,
   schema: z.ZodType<T>,
   signal?: AbortSignal,
   params?: Record<string, number>,
-) {
-  const { data } = await api.get<unknown>(`/empresas/me/${path}`, { signal, params });
-  return schema.parse(data);
+): Promise<T> {
+  try {
+    const response = await api.get<unknown>(`/empresas/me/${path}`, { signal, params });
+    return parseResponse(response, schema, "invalid_report_response");
+  } catch (cause) { throw normalizeServiceError(cause, `relatorios.${path}`); }
 }
 
-export const getDau = (signal?: AbortSignal) => readReport("kpis/dau", z.array(dauSchema), signal);
-export const getRecommendations = (signal?: AbortSignal) =>
+export const getDau = (signal?: AbortSignal): Promise<DauDay[]> => readReport("kpis/dau", z.array(dauSchema), signal);
+export const getRecommendations = (signal?: AbortSignal): Promise<RecommendationDay[]> =>
   readReport("kpis/recomendacoes", z.array(recommendationSchema), signal);
-export const getTopProducts = (limite = 5, signal?: AbortSignal) =>
+export const getTopProducts = (limite = 5, signal?: AbortSignal): Promise<TopProduct[]> =>
   readReport("kpis/top-produtos", z.array(productSchema), signal, { limite });
-export const getUserProfile = (signal?: AbortSignal) =>
+export const getUserProfile = (signal?: AbortSignal): Promise<UserProfile[]> =>
   readReport("kpis/perfil-usuarios", z.array(profileSchema), signal);
-export const getStatistics = (signal?: AbortSignal) =>
+export const getStatistics = (signal?: AbortSignal): Promise<Statistics> =>
   readReport("estatisticas", statisticsSchema, signal);
-export const getHomeSummary = (signal?: AbortSignal) =>
+export const getHomeSummary = (signal?: AbortSignal): Promise<HomeSummary> =>
   readReport("resumo", homeSummarySchema, signal);

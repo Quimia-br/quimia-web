@@ -11,13 +11,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import ProductCreateDialog from "@/components/ProductCreateDialog";
 import { ToastProvider } from "@/components/Toast";
 import { api } from "@/lib/api";
-import { cleanAnalysis, pendingAnalysis } from "../fixtures/fds";
+import { cleanAnalysis, pendingAnalysis, registeredProduct } from "../fixtures/fds";
 
 const originalAdapter = api.defaults.adapter;
 const clients: QueryClient[] = [];
 const pdf = (name = "seguranca.pdf") =>
   new File(["%PDF-1.7\nFDS"], name, { type: "application/pdf" });
 function response(config: InternalAxiosRequestConfig, data: unknown, status = 200) {
+  if (config.url?.endsWith("/assincronas") && data && typeof data === "object" && "analiseId" in data) {
+    data = { id: "job-1", status: "concluida", analise: data, codigo: null, detail: null };
+    status = 202;
+  }
   return { config, data, status, statusText: String(status), headers: new AxiosHeaders() };
 }
 function setup() {
@@ -72,9 +76,9 @@ beforeEach(() => {
       config,
       config.url?.endsWith("/tipos")
         ? ["limpeza_geral"]
-        : config.url?.endsWith("/analises")
+        : config.url?.endsWith("/assincronas")
           ? cleanAnalysis
-          : { situacao: "criado", produto: { id: 42 } },
+          : { situacao: "criado", produto: registeredProduct },
     );
 });
 afterEach(() => {
@@ -91,9 +95,9 @@ describe("Product FDS registration", () => {
       if (config.url === "/empresas/me/produtos" && config.method === "post") {
         if (++attempts === 1) return response(config, "<html><title>Erro Interno</title></html>");
         expect((config.data as FormData).get("analiseFds")).toBe("analise-1");
-        return response(config, { situacao: "criado", produto: { id: 42 } }, 201);
+        return response(config, { situacao: "criado", produto: registeredProduct }, 201);
       }
-      if (config.url?.endsWith("/analises")) return response(config, pendingAnalysis);
+      if (config.url?.endsWith("/assincronas")) return response(config, pendingAnalysis);
       return adapter(config);
     };
     setup();
@@ -168,7 +172,7 @@ describe("Product FDS registration", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: "Continuar", exact: true }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     expect(requests).toHaveLength(2);
-    expect(requests[0].url).toBe("/empresas/me/produtos/fds/analises");
+    expect(requests[0].url).toBe("/empresas/me/produtos/fds/analises/assincronas");
     expect((requests[0].data as FormData).get("fds")).toBeInstanceOf(File);
     const saved = requests[1].data as FormData;
     expect(saved.get("analiseFds")).toBe("analise-1");
@@ -179,9 +183,9 @@ describe("Product FDS registration", () => {
     let saved: FormData | undefined;
     api.defaults.adapter = async (config) => {
       if (config.url?.endsWith("/tipos")) return response(config, ["limpeza_geral"]);
-      if (config.url?.endsWith("/analises")) return response(config, pendingAnalysis);
+      if (config.url?.endsWith("/assincronas")) return response(config, pendingAnalysis);
       saved = config.data as FormData;
-      return response(config, { situacao: "criado", produto: { id: 42 } });
+      return response(config, { situacao: "criado", produto: registeredProduct });
     };
     setup();
     await start();
@@ -212,7 +216,7 @@ describe("Product FDS registration", () => {
     let saved: FormData | undefined;
     api.defaults.adapter = async (config) => {
       if (config.url?.endsWith("/tipos")) return response(config, ["limpeza_geral"]);
-      if (config.url?.endsWith("/analises"))
+      if (config.url?.endsWith("/assincronas"))
         return response(config, {
           ...pendingAnalysis,
           pendencias: [
@@ -226,7 +230,7 @@ describe("Product FDS registration", () => {
           ],
         });
       saved = config.data as FormData;
-      return response(config, { situacao: "criado", produto: { id: 42 } });
+      return response(config, { situacao: "criado", produto: registeredProduct });
     };
     setup();
     await start();
@@ -241,14 +245,14 @@ describe("Product FDS registration", () => {
     let saved: FormData | undefined;
     api.defaults.adapter = async (config) => {
       if (config.url?.endsWith("/tipos")) return response(config, ["limpeza_geral"]);
-      if (config.url?.endsWith("/analises")) {
+      if (config.url?.endsWith("/assincronas")) {
         if (++reads === 1) return response(config, pendingAnalysis);
         expect((config.data as FormData).get("analiseAnterior")).toBe("analise-1");
         expect(((config.data as FormData).get("fds") as File).name).toBe("corrigida.pdf");
         return response(config, { ...cleanAnalysis, analiseId: "analise-2" });
       }
       saved = config.data as FormData;
-      return response(config, { situacao: "criado", produto: { id: 42 } });
+      return response(config, { situacao: "criado", produto: registeredProduct });
     };
     setup();
     await start();
@@ -329,13 +333,10 @@ describe("Product FDS registration", () => {
     api.defaults.adapter = async (config) => {
       if (config.url?.endsWith("/tipos")) return response(config, ["limpeza_geral"]);
       if (++calls === 1)
-        throw new AxiosError(
-          "Unavailable",
-          "ERR_BAD_RESPONSE",
-          config,
-          undefined,
-          response(config, { detail: "extrator_indisponivel" }, 503),
-        );
+        return response(config, {
+          id: "job-1", status: "falhou", analise: null,
+          codigo: 503, detail: "extrator_indisponivel",
+        }, 202);
       return response(config, cleanAnalysis);
     };
     setup();
@@ -352,7 +353,7 @@ describe("Product FDS registration", () => {
     let saves = 0;
     api.defaults.adapter = async (config) => {
       if (config.url?.endsWith("/tipos")) return response(config, ["limpeza_geral"]);
-      if (config.url?.endsWith("/analises"))
+      if (config.url?.endsWith("/assincronas"))
         return response(config, { ...cleanAnalysis, analiseId: `analise-${++reads}` });
       if (++saves === 1)
         throw new AxiosError(
@@ -363,7 +364,7 @@ describe("Product FDS registration", () => {
           response(config, { detail: "analise_expirada" }, 410),
         );
       expect((config.data as FormData).get("analiseFds")).toBe("analise-2");
-      return response(config, { situacao: "criado", produto: { id: 42 } });
+      return response(config, { situacao: "criado", produto: registeredProduct });
     };
     setup();
     await start();

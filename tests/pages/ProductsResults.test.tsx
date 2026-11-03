@@ -87,6 +87,129 @@ afterEach(() => {
 });
 
 describe("Products results", () => {
+  it.each(["table", "grid"])(
+    "edits the selected product from the %s and refreshes results",
+    async (display) => {
+      const user = userEvent.setup();
+      let current = product;
+      api.defaults.adapter = (config) => {
+        if (config.method === "patch") {
+          expect(config.url).toBe("/empresas/me/produtos/42");
+          expect(config.data).toBeInstanceOf(FormData);
+          expect(config.data.get("nome")).toBe("Limpa vidros novo");
+          current = { ...product, nome: config.data.get("nome") };
+          return respond(config, current);
+        }
+        if (config.url?.endsWith("/tipos")) return respond(config, ["limpeza_geral"]);
+        return respond(config, { ...page, itens: [current] });
+      };
+      setup();
+      await screen.findByText(product.nome);
+      if (display === "grid")
+        await user.click(
+          screen.getByRole("button", { name: "Alternar para visualização em grade" }),
+        );
+      await user.click(screen.getByRole("button", { name: `Editar ${product.nome}` }));
+      const dialog = await screen.findByRole("dialog", { name: "Editar produto" });
+      const name = within(dialog).getByRole("textbox", { name: "Nome" });
+      expect(name).toHaveValue(product.nome);
+      await user.clear(name);
+      await user.type(name, "Limpa vidros novo");
+      await user.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Editar produto" })).not.toBeInTheDocument(),
+      );
+      expect(await screen.findByText("Limpa vidros novo")).toBeInTheDocument();
+    },
+  );
+
+  it.each(["table", "grid"])(
+    "confirms deletion from the %s before removing the product",
+    async (display) => {
+      const user = userEvent.setup();
+      let deleted = false;
+      api.defaults.adapter = (config) => {
+        if (config.method === "delete") {
+          expect(config.url).toBe("/empresas/me/produtos/42");
+          deleted = true;
+          return respond(config, null);
+        }
+        return respond(
+          config,
+          deleted ? { ...page, itens: [], totalItens: 0, totalPaginas: 0 } : page,
+        );
+      };
+      setup();
+      await screen.findByText(product.nome);
+      if (display === "grid")
+        await user.click(
+          screen.getByRole("button", { name: "Alternar para visualização em grade" }),
+        );
+      await user.click(screen.getByRole("button", { name: `Excluir ${product.nome}` }));
+      let dialog = await screen.findByRole("dialog", { name: "Excluir produto" });
+      expect(within(dialog).getByText(/Limpa vidros/)).toBeInTheDocument();
+      expect(deleted).toBe(false);
+      await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+      expect(deleted).toBe(false);
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: `Excluir ${product.nome}` }));
+      dialog = await screen.findByRole("dialog", { name: "Excluir produto" });
+      await user.click(within(dialog).getByRole("button", { name: "Excluir produto" }));
+      expect(
+        await screen.findByRole("heading", { name: "Nenhum produto foi adicionado ainda." }),
+      ).toBeInTheDocument();
+      expect(requests.filter((request) => request.method === "delete")).toHaveLength(1);
+    },
+  );
+
+  it("keeps the edit open with entered data after an API failure", async () => {
+    const user = userEvent.setup();
+    api.defaults.adapter = (config) => {
+      if (config.method === "patch") {
+        requests.push(config);
+        return Promise.reject(new AxiosError("Network Error", "ERR_NETWORK", config));
+      }
+      return respond(config, config.url?.endsWith("/tipos") ? ["limpeza_geral"] : page);
+    };
+    setup();
+    await screen.findByText(product.nome);
+    await user.click(screen.getByRole("button", { name: `Editar ${product.nome}` }));
+    const dialog = await screen.findByRole("dialog", { name: "Editar produto" });
+    const name = within(dialog).getByRole("textbox", { name: "Nome" });
+    await user.clear(name);
+    await user.type(name, "Nome corrigido");
+    await user.click(within(dialog).getByRole("button", { name: "Salvar alterações" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Não foi possível salvar");
+    expect(name).toHaveValue("Nome corrigido");
+    expect(within(dialog).getByRole("button", { name: "Salvar alterações" })).toBeEnabled();
+  });
+
+  it("blocks duplicate deletion and closing while saving, then keeps errors retryable", async () => {
+    const user = userEvent.setup();
+    let rejectDelete!: () => void;
+    api.defaults.adapter = (config) => {
+      if (config.method !== "delete") return respond(config);
+      requests.push(config);
+      return new Promise((_resolve, reject) => {
+        rejectDelete = () => reject(new AxiosError("Network Error", "ERR_NETWORK", config));
+      });
+    };
+    setup();
+    await screen.findByText(product.nome);
+    await user.click(screen.getByRole("button", { name: `Excluir ${product.nome}` }));
+    const dialog = await screen.findByRole("dialog", { name: "Excluir produto" });
+    expect(within(dialog).getByRole("button", { name: "Cancelar" })).toHaveFocus();
+    await user.click(within(dialog).getByRole("button", { name: "Excluir produto" }));
+    expect(within(dialog).getByRole("button", { name: "Excluindo…" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Cancelar" })).toBeDisabled();
+    await user.keyboard("{Escape}");
+    expect(dialog).toBeInTheDocument();
+    await act(async () => rejectDelete());
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Não foi possível excluir");
+    expect(within(dialog).getByRole("button", { name: "Excluir produto" })).toBeEnabled();
+    expect(requests.filter((request) => request.method === "delete")).toHaveLength(1);
+  });
+
   it("uses the URL filters and page for both displays without fetching on toggle", async () => {
     const router = setup("/products?q=limpa&fields=nome&p=2");
     const table = await screen.findByRole("table", { name: "Produtos cadastrados" });
@@ -103,6 +226,9 @@ describe("Products results", () => {
         name: "Limpa vidros",
       }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Ver detalhes/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Editar Limpa vidros" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Excluir Limpa vidros" })).toBeInTheDocument();
     expect(requests).toHaveLength(1);
     expect(router.state.location.search).toContain("p=2");
     expect(
