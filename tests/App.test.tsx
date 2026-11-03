@@ -1,9 +1,18 @@
 import { renderWithAuth as render } from "./support/render-with-auth";
-import { act, cleanup, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import App from "@/App";
 import router from "@/routes";
 import { api } from "@/services/api";
@@ -34,7 +43,33 @@ async function open(path: string) {
     await router.navigate(path);
   });
   render(<App />);
+  await settlePage();
 }
+
+async function settlePage() {
+  await act(async () => vi.dynamicImportSettled());
+  await waitFor(
+    () => {
+      expect(document.querySelector("[data-route-loading]")).not.toBeInTheDocument();
+    },
+    { timeout: 5000 },
+  );
+}
+
+beforeAll(async () => {
+  // Compile the real lazy modules before timing route behavior in a cold test worker.
+  await Promise.all([
+    import("@/pages/Login"),
+    import("@/pages/Signup"),
+    import("@/pages/ResetPassword"),
+    import("@/pages/PasswordResetSuccess"),
+    import("@/pages/Home"),
+    import("@/pages/Products"),
+    import("@/pages/Graphs"),
+    import("@/pages/Profile"),
+    import("@/pages/NotFound"),
+  ]);
+}, 30000);
 
 beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
@@ -72,7 +107,7 @@ afterEach(async () => {
 
 afterAll(() => router.dispose());
 
-describe("Application routes and providers", () => {
+describe("Application routes and providers", { timeout: 10000 }, () => {
   it.each(["/recuperar-senha", "/recover-password", "/reset-password"])(
     "opens an emailed reset link through the actual router at %s",
     async (path) => {
@@ -94,6 +129,7 @@ describe("Application routes and providers", () => {
     await user.type(await screen.findByLabelText("Criar senha"), "Empresa456");
     await user.type(screen.getByLabelText("Confirmar sua senha"), "Empresa456");
     await user.click(screen.getByRole("button", { name: "Resetar senha" }));
+    await settlePage();
     expect(
       await screen.findByRole("heading", { name: "Senha alterada com sucesso!" }),
     ).toBeInTheDocument();
@@ -124,7 +160,8 @@ describe("Application routes and providers", () => {
     };
     await open("/products");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
+    const results = await screen.findByRole("region", { name: "Resultados de produtos" });
+    expect(await within(results).findByRole("alert")).toHaveTextContent(
       "Não foi possível carregar os produtos",
     );
     expect(router.state.location.pathname).toBe("/products");
@@ -160,6 +197,7 @@ describe("Application routes and providers", () => {
     await user.type(screen.getByLabelText("E-mail"), company.email);
     await user.type(screen.getByLabelText("Senha"), "password123");
     await user.click(screen.getByRole("button", { name: "Entrar" }));
+    await settlePage();
 
     expect(await screen.findByRole("heading", { name: "Perfil", level: 1 })).toBeVisible();
     expect(router.state.location).toMatchObject({
@@ -186,6 +224,7 @@ describe("Application routes and providers", () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByRole("link", { name: "Produtos" }));
+    await settlePage();
     expect(
       await screen.findByRole("heading", { name: "Produtos cadastrados", level: 1 }),
     ).toBeVisible();
@@ -206,6 +245,7 @@ describe("Application routes and providers", () => {
     expect(await screen.findByRole("heading", { name: "Estatísticas", level: 1 })).toBeVisible();
     expect(document.documentElement).toHaveClass("dark");
     await userEvent.setup().click(screen.getByRole("link", { name: "Perfil" }));
+    await settlePage();
 
     expect(await screen.findByRole("heading", { name: "Perfil", level: 1 })).toBeVisible();
     expect(document.documentElement).toHaveClass("dark");
@@ -214,6 +254,7 @@ describe("Application routes and providers", () => {
   it("opens signup from the login screen without a company session", async () => {
     await open("/login");
     await userEvent.setup().click(screen.getByRole("link", { name: "Crie já" }));
+    await settlePage();
 
     expect(await screen.findByRole("button", { name: "Cadastrar" })).toBeVisible();
     expect(screen.getByLabelText("CNPJ")).toBeVisible();
@@ -228,6 +269,7 @@ describe("Application routes and providers", () => {
 
     expect(screen.getByRole("heading", { name: "Página não encontrada" })).toBeVisible();
     await userEvent.setup().click(screen.getByRole("link", { name: "Voltar para Home" }));
+    await settlePage();
 
     expect(await screen.findByRole("heading", { name: "Home", level: 1 })).toBeVisible();
     expect(router.state.location.pathname).toBe("/");

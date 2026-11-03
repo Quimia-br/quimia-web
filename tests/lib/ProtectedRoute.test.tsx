@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import ProtectedRoute from "@/lib/ProtectedRoute";
@@ -47,12 +47,24 @@ function setup() {
   );
 }
 
-beforeEach(() => useAuthStore.getState().actions.login("valid", company));
+beforeEach(() => {
+  useAuthStore.getState().actions.login("valid", company);
+  vi.stubGlobal("matchMedia", (media: string) => ({
+    matches: false,
+    media,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+});
 afterEach(() => {
   cleanup();
   clients.splice(0).forEach((client) => client.clear());
   api.defaults.adapter = originalAdapter;
   useAuthStore.getState().actions.logout();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("ProtectedRoute", () => {
@@ -71,8 +83,9 @@ describe("ProtectedRoute", () => {
       expect(screen.queryByText("Página de login")).not.toBeInTheDocument();
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
 
+      const retry = await screen.findByRole("button", { name: "Tentar novamente" });
       unavailable = false;
-      await userEvent.setup().click(screen.getByRole("button", { name: "Tentar novamente" }));
+      await userEvent.setup().click(retry);
       expect(await screen.findByText("Área protegida")).toBeInTheDocument();
     },
   );

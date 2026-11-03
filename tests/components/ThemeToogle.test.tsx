@@ -68,7 +68,7 @@ describe("ThemeToogle", () => {
       expect(button).toHaveFocus();
       await user.keyboard("{Enter}");
 
-      expect(localStorage.getItem(storageKey)).toBe(target);
+      expect(JSON.parse(localStorage.getItem(storageKey)!)).toEqual({ _versao: 1, dados: target });
       expect(document.documentElement).toHaveClass(target);
       expect(button).toHaveAccessibleName(
         target === "dark" ? "Alternar para tema claro" : "Alternar para tema escuro",

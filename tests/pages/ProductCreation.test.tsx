@@ -142,6 +142,7 @@ afterEach(() => {
   clients.splice(0).forEach((client) => client.clear());
   api.defaults.adapter = originalAdapter;
   localStorage.clear();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -221,7 +222,25 @@ describe("Web product creation", () => {
     fireEvent.change(within(dialog).getByRole("textbox", { name: "Código de barras" }), {
       target: { value: "0012345678905" },
     });
-    await save(dialog);
+    const user = userEvent.setup();
+    await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
+    fireEvent.change(within(dialog).getByLabelText("Arquivo PDF da FDS"), {
+      target: { files: [new File(["%PDF-1.7\nFDS"], "ficha.pdf", { type: "application/pdf" })] },
+    });
+    await within(dialog).findByText("ficha.pdf");
+
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Continuar" }));
+    await act(async () => {
+      await vi.waitFor(() => expect(analysisRequests).toHaveLength(1));
+    });
+    expect(
+      within(dialog).getByRole("status", { name: "Análise da FDS em andamento" }),
+    ).toBeVisible();
+    await act(async () => vi.advanceTimersByTimeAsync(2000));
+    expect(within(dialog).getByText("Nenhuma pendência foi encontrada.")).toBeVisible();
+    vi.useRealTimers();
+    await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
     await waitFor(() =>
       expect(
         screen.queryByRole("dialog", { name: "Cadastrar novo produto" }),

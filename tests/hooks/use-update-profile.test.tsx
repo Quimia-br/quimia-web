@@ -47,9 +47,12 @@ it("keeps the saved photo when an upload returns an HTML page with HTTP 200", as
   await act(async () => {
     await expect(
       result.current.mutateAsync({
-        imagem: new File(["image"], "foto.webp", { type: "image/webp" }),
+        imagem: new File(["RIFFxxxxWEBP"], "foto.webp", { type: "image/webp" }),
       }),
-    ).rejects.toBeInstanceOf(ProfilePhotoError);
+    ).rejects.toMatchObject({
+      fieldsSaved: false,
+      cause: { code: "ERR_BAD_RESPONSE" },
+    });
   });
   expect(client.getQueryData(authKeys.user())).toEqual(saved);
 });
@@ -80,7 +83,7 @@ it("preserves saved fields on photo failure and retries only the remaining photo
       });
     return { ...response, data: { fotoUrl: "https://example.com/nova.webp" } };
   };
-  const image = new File(["image"], "foto.webp", { type: "image/webp" });
+  const image = new File(["RIFFxxxxWEBP"], "foto.webp", { type: "image/webp" });
   const { result } = renderHook(useUpdateProfile, { wrapper });
   let failure: unknown;
   await act(async () => {
