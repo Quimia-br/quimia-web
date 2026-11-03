@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { forgotPassword } from "@/services/auth";
+import { withFinally } from "@/lib/utils/withFinally";
 
 export function useRecoveryEmail(email: string) {
   const [remaining, setRemaining] = useState(60);
@@ -17,15 +18,20 @@ export function useRecoveryEmail(email: string) {
     sending.current = true;
     setPending(true);
     setFailed(false);
-    try {
-      await forgotPassword(email);
-      setRemaining(60);
-    } catch {
-      setFailed(true);
-    } finally {
-      sending.current = false;
-      setPending(false);
-    }
+    await withFinally(
+      async () => {
+        try {
+          await forgotPassword(email);
+          setRemaining(60);
+        } catch {
+          setFailed(true);
+        }
+      },
+      () => {
+        sending.current = false;
+        setPending(false);
+      },
+    );
   }
   return { remaining, pending, failed, resend, resendDisabled: remaining > 0 || pending };
 }

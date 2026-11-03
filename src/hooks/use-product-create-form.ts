@@ -76,18 +76,18 @@ export function useProductCreateForm({
     imagem: image ?? undefined,
   };
 
-  function changeField(name: keyof ProductFields, value: string) {
-    updateDraft((current) => ({ ...current, fields: { ...current.fields, [name]: value } }));
-    if (errors[name]) validateField(name, value);
-    onEdit();
-  }
-
   function validateField(name: keyof ProductFields, value?: string) {
     const result = productCreateFormSchema.shape[name].safeParse(value ?? values[name]);
     setErrors((current) => ({
       ...current,
       [name]: result.success ? undefined : result.error.issues[0]?.message,
     }));
+  }
+
+  function changeField(name: keyof ProductFields, value: string) {
+    updateDraft((current) => ({ ...current, fields: { ...current.fields, [name]: value } }));
+    if (errors[name]) validateField(name, value);
+    onEdit();
   }
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
