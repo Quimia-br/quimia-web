@@ -21,12 +21,14 @@ export function FdsFilePicker({ file, disabled, onSelect, onRemove, replace }: P
   const [dragging, setDragging] = useState(false);
   return (
     <div className="flex min-w-0 flex-col gap-4 py-6">
+      <label htmlFor={id} className="sr-only">
+        Arquivo PDF da FDS
+      </label>
       <input
         ref={picker}
         id={id}
         type="file"
         accept="application/pdf,.pdf"
-        aria-label="Arquivo PDF da FDS"
         className="hidden"
         disabled={disabled}
         onChange={(event) => {

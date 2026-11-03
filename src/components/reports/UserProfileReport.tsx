@@ -37,11 +37,14 @@ export default function UserProfileReport() {
           <ReportDataTable
             caption="Usuários por estado e nível de acesso"
             headers={["Estado", "Nível de acesso", "Usuários"]}
-            rows={rows.map((row) => [
-              row.estado === "NI" ? "Não informado" : row.estado,
-              row.nivelAcesso,
-              reportNumber.format(row.totalUsuarios),
-            ])}
+            rows={rows.map((row) => ({
+              id: JSON.stringify([row.estado, row.nivelAcesso]),
+              cells: [
+                row.estado === "NI" ? "Não informado" : row.estado,
+                row.nivelAcesso,
+                reportNumber.format(row.totalUsuarios),
+              ],
+            }))}
           />
         </>
       )}

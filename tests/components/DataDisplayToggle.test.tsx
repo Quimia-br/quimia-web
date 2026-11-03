@@ -33,10 +33,10 @@ describe("DataDisplayToggle", () => {
     expect(screen.getByText("table")).toBeVisible();
     await user.click(gridAction);
     expect(screen.getByText("grid")).toBeVisible();
-    expect(localStorage.getItem(key)).toBe("grid");
+    expect(JSON.parse(localStorage.getItem(key)!)).toEqual({ _versao: 1, dados: "grid" });
     await user.keyboard("{Enter}");
     expect(screen.getByText("table")).toBeVisible();
-    expect(localStorage.getItem(key)).toBe("table");
+    expect(JSON.parse(localStorage.getItem(key)!)).toEqual({ _versao: 1, dados: "table" });
     await user.click(screen.getByRole("button", { name: "Alternar para visualização em grade" }));
     view.unmount();
     render(

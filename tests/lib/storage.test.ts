@@ -4,7 +4,7 @@ import {
   removeStoredValue,
   writeStoredValue,
   type StorageSchema,
-} from "@/utils/storage";
+} from "@/lib/utils/storage";
 
 const schema: StorageSchema<{ enabled: boolean }> = {
   version: 1,
@@ -34,12 +34,16 @@ describe("versioned storage", () => {
       _versao: 1,
       dados: { enabled: true },
     });
-    expect(readStoredValue("setting", schema, fallback)).toEqual({ enabled: true });
+    expect(readStoredValue("setting", schema, fallback)).toEqual({
+      enabled: true,
+    });
   });
 
   it("migrates a recognized legacy value to the current envelope", () => {
     localStorage.setItem("setting", "yes");
-    expect(readStoredValue("setting", schema, fallback)).toEqual({ enabled: true });
+    expect(readStoredValue("setting", schema, fallback)).toEqual({
+      enabled: true,
+    });
     expect(JSON.parse(localStorage.getItem("setting")!)).toEqual({
       _versao: 1,
       dados: { enabled: true },
@@ -55,14 +59,21 @@ describe("versioned storage", () => {
     "null",
   ])("discards corrupt or unsupported values (%s)", (saved) => {
     localStorage.setItem("setting", saved);
-    expect(readStoredValue("setting", schema, fallback)).toEqual({ enabled: false });
+    expect(readStoredValue("setting", schema, fallback)).toEqual({
+      enabled: false,
+    });
     expect(localStorage.getItem("setting")).toBeNull();
   });
 
   it("never treats a future envelope as legacy input", () => {
     localStorage.setItem("setting", '{"_versao":2,"dados":"yes"}');
-    const permissiveMigration = { ...schema, migrate: () => ({ enabled: true }) };
-    expect(readStoredValue("setting", permissiveMigration, fallback)).toEqual({ enabled: false });
+    const permissiveMigration = {
+      ...schema,
+      migrate: () => ({ enabled: true }),
+    };
+    expect(readStoredValue("setting", permissiveMigration, fallback)).toEqual({
+      enabled: false,
+    });
   });
 
   it("returns the migrated value even if storage rejects the rewrite", () => {
@@ -70,7 +81,9 @@ describe("versioned storage", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("full");
     });
-    expect(readStoredValue("setting", schema, fallback)).toEqual({ enabled: true });
+    expect(readStoredValue("setting", schema, fallback)).toEqual({
+      enabled: true,
+    });
   });
 
   it("falls back without interrupting the caller when storage access is denied", () => {
@@ -83,7 +96,9 @@ describe("versioned storage", () => {
     vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
       throw new Error("denied");
     });
-    expect(readStoredValue("setting", schema, fallback)).toEqual({ enabled: false });
+    expect(readStoredValue("setting", schema, fallback)).toEqual({
+      enabled: false,
+    });
     expect(() => writeStoredValue("setting", { enabled: true }, schema)).not.toThrow();
     expect(() => removeStoredValue("setting")).not.toThrow();
   });

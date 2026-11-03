@@ -1,35 +1,18 @@
-import { useState } from "react";
-import { revalidateLogic, useForm, useSelector } from "@tanstack/react-form";
-import { z } from "zod";
 import BasicButton from "@/components/BasicButton";
 import FormTextField from "@/components/FormTextField";
 import MainTitle from "@/components/MainTitle";
 import LinkButton from "@/components/LinkButton";
 import Form from "@/components/smoothui/form";
 import RecoveryEmailSent from "@/components/RecoveryEmailSent";
-import { forgotPassword } from "@/services/auth";
+import { useForgotPasswordForm } from "@/hooks/use-forgot-password-form";
 
-const schema = z.object({ email: z.email("Informe um e-mail válido") });
+interface ForgotPasswordFormProps {
+  onError: () => void;
+}
 
-export default function ForgotPasswordForm({ onError }: { onError: () => void }) {
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const form = useForm({
-    defaultValues: { email: "" },
-    validators: { onDynamic: schema },
-    validationLogic: revalidateLogic({ mode: "submit", modeAfterSubmission: "change" }),
-    onSubmit: async ({ value }) => {
-      try {
-        await forgotPassword(value.email.trim());
-        setSentTo(value.email.trim());
-      } catch {
-        onError();
-      }
-    },
-  });
-  const errors = useSelector(form.store, (state) => ({
-    email: state.fieldMeta.email?.errors[0]?.message,
-  }));
-  const pending = useSelector(form.store, (state) => state.isSubmitting);
+export default function ForgotPasswordForm({ onError }: ForgotPasswordFormProps) {
+  const { form, errors, pending, sentTo, handleSubmit, submitDisabled, limits } =
+    useForgotPasswordForm(onError);
 
   if (sentTo) return <RecoveryEmailSent email={sentTo} />;
 
@@ -39,19 +22,14 @@ export default function ForgotPasswordForm({ onError }: { onError: () => void })
         title="Esqueceu a senha?"
         description="Digite o e-mail atrelado à conta da sua empresa para resetar sua senha."
       />
-      <Form
-        errors={errors}
-        onFormSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-      >
+      <Form errors={errors} onFormSubmit={handleSubmit}>
         <form.Field name="email">
           {(field) => (
             <FormTextField
               name={field.name}
               label="E-mail"
               type="email"
+              maxLength={limits.email}
               autoComplete="email"
               clearLabel="Limpar e-mail"
               placeholder="email.exemplo@quimia.com"
@@ -63,17 +41,13 @@ export default function ForgotPasswordForm({ onError }: { onError: () => void })
           )}
         </form.Field>
         <div className="flex flex-col items-center gap-3">
-          <form.Subscribe selector={(state) => !!state.values.email.trim()}>
-            {(hasEmail) => (
-              <BasicButton
-                type="submit"
-                className="min-[480px]:text-2xl/[1.2] max-[480px]:text-xl/[1.2]"
-                disabled={!hasEmail || pending}
-              >
-                {pending ? "Enviando..." : "Enviar e-mail"}
-              </BasicButton>
-            )}
-          </form.Subscribe>
+          <BasicButton
+            type="submit"
+            className="min-[480px]:text-2xl/[1.2] max-[480px]:text-xl/[1.2]"
+            disabled={submitDisabled}
+          >
+            {pending ? "Enviando..." : "Enviar e-mail"}
+          </BasicButton>
           <LinkButton to="/login">Cancelar</LinkButton>
         </div>
       </Form>

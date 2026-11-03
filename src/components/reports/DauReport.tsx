@@ -61,17 +61,20 @@ export default function DauReport() {
                 "Desvio padrão",
                 "Z-score",
               ]}
-              rows={rows.map((row) => [
-                fullReportDate(row.data),
-                reportNumber.format(row.usuariosAtivos),
-                ...[
-                  row.variacaoPct,
-                  row.media7d,
-                  row.mediaGlobal,
-                  row.desvioPadrao,
-                  row.zScore,
-                ].map((value) => (value == null ? "—" : reportDecimal.format(value))),
-              ])}
+              rows={rows.map((row) => ({
+                id: row.data,
+                cells: [
+                  fullReportDate(row.data),
+                  reportNumber.format(row.usuariosAtivos),
+                  ...[
+                    row.variacaoPct,
+                    row.media7d,
+                    row.mediaGlobal,
+                    row.desvioPadrao,
+                    row.zScore,
+                  ].map((value) => (value == null ? "—" : reportDecimal.format(value))),
+                ],
+              }))}
             />
           </>
         );

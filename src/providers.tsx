@@ -14,12 +14,12 @@ function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-      <AccessibilityProvider>
-        <ThemeProvider>
-          {children}
-          <AccessibilityTools />
-        </ThemeProvider>
-      </AccessibilityProvider>
+        <AccessibilityProvider>
+          <ThemeProvider>
+            {children}
+            <AccessibilityTools />
+          </ThemeProvider>
+        </AccessibilityProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -67,7 +67,7 @@ describe("DataDisplayProvider", () => {
       </DataDisplayProvider>,
     );
     expect(screen.getByText("table")).toBeVisible();
-    expect(localStorage.getItem(firstKey)).toBe("grid");
+    expect(JSON.parse(localStorage.getItem(firstKey)!)).toEqual({ _versao: 1, dados: "grid" });
   });
 
   it("requires a provider", () => {

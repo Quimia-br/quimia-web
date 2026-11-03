@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AxiosError, AxiosHeaders } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import ResetPassword from "@/pages/ResetPassword";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 
 const originalAdapter = api.defaults.adapter;
 let requests: { url?: string; data: Record<string, string> }[];
@@ -69,6 +69,7 @@ describe("company password recovery", () => {
     const user = userEvent.setup();
     setup();
     expect(screen.getByRole("button", { name: "Enviar e-mail" })).toBeDisabled();
+    expect(screen.getByLabelText("E-mail")).toHaveAttribute("maxlength", "255");
     await user.type(screen.getByLabelText("E-mail"), "invalid");
     await user.click(screen.getByRole("button", { name: "Enviar e-mail" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Informe um e-mail válido");
@@ -137,6 +138,8 @@ describe("company password recovery", () => {
   it("rejects mismatched passwords before contacting the API", async () => {
     const user = userEvent.setup();
     setup("/reset-password?token=link-token");
+    expect(screen.getByLabelText("Criar senha")).toHaveAttribute("maxlength", "72");
+    expect(screen.getByLabelText("Confirmar sua senha")).toHaveAttribute("maxlength", "72");
     await fillPasswords(user, "Different456");
     await user.click(screen.getByRole("button", { name: "Resetar senha" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("As senhas não coincidem");

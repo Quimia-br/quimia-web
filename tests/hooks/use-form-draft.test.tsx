@@ -44,7 +44,9 @@ describe("form drafts", () => {
       "signup",
       JSON.stringify({ profile: { name: "Saved", password: "secret", admin: true } }),
     );
-    expect(loadFormDraft("signup", { profile: { name: "", password: "", accepted: false } })).toEqual({
+    expect(
+      loadFormDraft("signup", { profile: { name: "", password: "", accepted: false } }),
+    ).toEqual({
       profile: { name: "Saved", password: "", accepted: false },
     });
     expect(JSON.parse(localStorage.getItem("signup")!)).toEqual({

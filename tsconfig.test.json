@@ -1,8 +1,8 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "types": ["vite/client", "node", "vitest/globals", "@testing-library/jest-dom"]
+    "types": ["@testing-library/jest-dom/vitest", "vite/client", "node", "vitest/globals"]
   },
   "include": ["src", "tests"],
-  "exclude": ["tests/lib/dev-proxy.test.ts", "tests/build"]
+  "exclude": ["tests/lib/api-config.test.ts", "tests/lib/dev-proxy.test.ts", "tests/build"]
 }

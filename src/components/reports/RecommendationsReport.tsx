@@ -54,11 +54,14 @@ export default function RecommendationsReport() {
           <ReportDataTable
             caption="Consultas e usuários por dia"
             headers={["Data", "Consultas", "Usuários distintos no dia"]}
-            rows={rows.map((row) => [
-              fullReportDate(row.data),
-              reportNumber.format(row.totalConsultas),
-              reportNumber.format(row.usuariosDistintos),
-            ])}
+            rows={rows.map((row) => ({
+              id: row.data,
+              cells: [
+                fullReportDate(row.data),
+                reportNumber.format(row.totalConsultas),
+                reportNumber.format(row.usuariosDistintos),
+              ],
+            }))}
           />
         </>
       )}

@@ -1,35 +1,14 @@
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import LinkButton from "@/components/LinkButton";
 import MainTitle from "@/components/MainTitle";
-import { forgotPassword } from "@/services/auth";
-import { withFinally } from "@/lib/utils/withFinally";
+import { useRecoveryEmail } from "@/hooks/use-recovery-email";
 
-export default function RecoveryEmailSent({ email }: { email: string }) {
-  const [remaining, setRemaining] = useState(60);
-  const [pending, setPending] = useState(false);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    const timer = window.setInterval(() => setRemaining((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+interface RecoveryEmailSentProps {
+  email: string;
+}
 
-  async function resend() {
-    if (pending || remaining > 0) return;
-    setPending(true);
-    setFailed(false);
-    await withFinally(
-      async () => {
-        try {
-          await forgotPassword(email);
-          setRemaining(60);
-        } catch {
-          setFailed(true);
-        }
-      },
-      () => setPending(false),
-    );
-  }
+export default function RecoveryEmailSent({ email }: RecoveryEmailSentProps) {
+  const { remaining, pending, failed, resend, resendDisabled } = useRecoveryEmail(email);
 
   return (
     <>
@@ -53,7 +32,7 @@ export default function RecoveryEmailSent({ email }: { email: string }) {
             Não foi possível reenviar o e-mail. Tente novamente.
           </p>
         )}
-        <Button variant="link" disabled={remaining > 0 || pending} onClick={resend}>
+        <Button variant="link" disabled={resendDisabled} onClick={resend}>
           {pending ? "Reenviando..." : remaining > 0 ? `(${remaining}s) Reenviar` : "Reenviar"}
         </Button>
         <LinkButton to="/login">Voltar para login</LinkButton>

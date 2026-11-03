@@ -1,7 +1,8 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderWithAuth as render } from "../support/render-with-auth";
+import { act, cleanup, fireEvent, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AxiosHeaders } from "axios";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { ThemeProvider } from "@/lib/theme-provider";

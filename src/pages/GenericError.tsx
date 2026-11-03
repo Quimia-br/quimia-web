@@ -1,10 +1,11 @@
+import RouteMain from "@/components/RouteMain";
 import FeedbackItem from "@/components/FeedbackItem";
 import Logo from "@/components/Logo";
 import { WifiIcon } from "@/components/ui/wifi";
 
 function GenericError() {
   return (
-    <main className="relative isolate flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background px-6 py-12 sm:px-10">
+    <RouteMain className="relative isolate flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background px-6 py-12 sm:px-10">
       <Logo className="pointer-events-none absolute -bottom-[48rem] -left-[71rem] -z-10 w-[1073px] rotate-[22.29deg] opacity-60 blur-[253.45px]" />
       <div className="flex w-full max-w-[1029px] flex-col items-center gap-8 lg:flex-row lg:gap-[86px]">
         <FeedbackItem
@@ -23,7 +24,7 @@ function GenericError() {
         </hgroup>
       </div>
       <Logo className="pointer-events-none absolute -right-[40rem] -top-[30rem] -z-10 w-[1073px] rotate-[22.29deg] opacity-60 blur-[253.45px]" />
-    </main>
+    </RouteMain>
   );
 }
 

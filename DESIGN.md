@@ -192,7 +192,7 @@ O espaço delimita grupos antes de qualquer divisor. Um painel em `{colors.surfa
 
 | Condition                                            | Key Changes                                                                              |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Abaixo de `md` (768 px na configuração padrão usada) | Padding de 24 px, menu lateral de 214 px aberto pelo cabeçalho, deslocando o conteúdo |
+| Abaixo de `md` (768 px na configuração padrão usada) | Padding de 24 px, menu lateral de 214 px aberto pelo cabeçalho, deslocando o conteúdo    |
 | A partir de `sm` (640 px)                            | DataGrid amplia padding; modal de produto amplia raio e espaçamento                      |
 | A partir de `md` (768 px)                            | Shell em linha, menu lateral e padding externo de 32 px                                  |
 | A partir de `lg` (1024 px)                           | Header pode alinhar título e ações em linha; AuthLayout adota composição de duas colunas |

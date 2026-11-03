@@ -9,13 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUser } from "@/hooks/use-user";
 import { useLogout } from "@/hooks/use-logout";
-import { useAuthStore } from "@/lib/auth-token";
+import { useAuth } from "@/hooks/use-auth";
 
 function ProfileContent() {
   const { data: profile, isPending, isError, refetch } = useUser();
   const logout = useLogout();
   const navigate = useNavigate();
-  const session = useAuthStore((state) => state.sessionVersion);
+  const { sessionVersion: session } = useAuth();
   return (
     <>
       <Header title="Perfil" />

@@ -5,7 +5,7 @@ import {
   removeStoredValue,
   writeStoredValue,
   type StorageSchema,
-} from "@/utils/storage";
+} from "@/lib/utils/storage";
 
 // Selectors are an allowlist; credential names are also excluded defensively.
 const privateField = /password|senha|token|recovery|recupera|__proto__|^constructor$|^prototype$/i;

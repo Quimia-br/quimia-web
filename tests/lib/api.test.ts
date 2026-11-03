@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { AxiosAdapter, InternalAxiosRequestConfig } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { login, logout } from "@/services/auth";
 import { getMe } from "@/services/empresas";

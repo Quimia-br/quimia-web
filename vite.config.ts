@@ -124,7 +124,7 @@ export default defineConfig(({ mode }) => {
             "typescript/prefer-namespace-keyword": "error",
             "typescript/triple-slash-reference": "error",
             "react/rules-of-hooks": "error",
-            "react/exhaustive-deps": "warn",
+            "react/exhaustive-deps": "error",
             "react/static-components": "error",
             "react/use-memo": "error",
             "react/preserve-manual-memoization": "error",

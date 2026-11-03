@@ -1,12 +1,18 @@
+import RouteMain from "@/components/RouteMain";
 import LinkButton from "@/components/LinkButton";
 import Logo from "@/components/Logo";
 
 function NotFound() {
   return (
-    <main className="flex items-center justify-center h-screen overflow-hidden">
+    <RouteMain className="flex items-center justify-center h-screen overflow-hidden">
       <section className="relative">
         <Logo className="absolute lg:w-[1070px] w-24 rotate-[22.29deg] opacity-60 blur-[253.45px] -left-[50rem] -bottom-[30rem] -z-2" />
-        <h1 className="opacity-50 -z-1 text-surface-base text-[650px] font-medium">404</h1>
+        <p
+          aria-hidden="true"
+          className="opacity-50 -z-1 text-surface-base text-[650px] font-medium"
+        >
+          404
+        </p>
         <Logo className="absolute lg:w-[1070px] w-24 rotate-[22.29deg] opacity-60 blur-[253.45px] -right-[50rem] -top-[30rem] -z-2" />
       </section>
       <div className="absolute flex flex-col gap-10">
@@ -20,7 +26,7 @@ function NotFound() {
           Voltar para Home
         </LinkButton>
       </div>
-    </main>
+    </RouteMain>
   );
 }
 

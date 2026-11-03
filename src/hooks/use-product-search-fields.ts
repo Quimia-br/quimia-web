@@ -16,13 +16,15 @@ export function useProductSearchFields<TField extends string>(availableFields: r
     fields: fieldsParser,
     p: pageQueryParser,
   });
-  const fields = availableFields.filter((field) => rawFields.includes(field));
+  const rawFieldSet = new Set(rawFields);
+  const fields = availableFields.filter((field) => rawFieldSet.has(field));
   const effectiveFields: readonly TField[] = fields.length ? fields : availableFields;
   const selected = fields.join(",");
 
   const setFields = useCallback(
     (values: readonly TField[]) => {
-      const next = availableFields.filter((field) => values.includes(field));
+      const valueSet = new Set(values);
+      const next = availableFields.filter((field) => valueSet.has(field));
       if (next.join(",") === selected) return;
       void setQuery({ fields: next.length ? next : null, p: null }, { history: "push" });
     },

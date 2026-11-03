@@ -40,12 +40,15 @@ export default function TopProductsReport() {
           <ReportDataTable
             caption="Ranking de produtos mais consultados"
             headers={["Posição", "Produto", "Marca", "Consultas"]}
-            rows={rows.map((row) => [
-              reportNumber.format(row.ranking),
-              row.nomeProduto,
-              row.nomeMarca ?? "—",
-              reportNumber.format(row.totalConsultas),
-            ])}
+            rows={rows.map((row) => ({
+              id: row.idProduto,
+              cells: [
+                reportNumber.format(row.ranking),
+                row.nomeProduto,
+                row.nomeMarca ?? "—",
+                reportNumber.format(row.totalConsultas),
+              ],
+            }))}
           />
         </>
       )}

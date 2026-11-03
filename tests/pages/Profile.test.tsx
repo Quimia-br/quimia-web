@@ -1,5 +1,6 @@
+import { renderWithAuth as render } from "../support/render-with-auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AxiosError, AxiosHeaders } from "axios";
@@ -9,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import Profile from "@/pages/Profile";
 import { AccessibilityProvider } from "@/lib/accessibility-provider";
 import { ThemeProvider } from "@/lib/theme-provider";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { authKeys } from "@/hooks/use-user";
 import { getCroppedImg } from "@/lib/utils/getCroppedImg";
@@ -127,7 +128,7 @@ describe("Profile", () => {
   it("explains a photo upload 401 in a toast after token renewal and keeps the saved fields", async () => {
     const user = userEvent.setup();
     vi.mocked(getCroppedImg).mockResolvedValue({
-      file: new File(["pixels"], "foto.webp", { type: "image/webp" }),
+      file: new File(["RIFFxxxxWEBP"], "foto.webp", { type: "image/webp" }),
     });
     api.defaults.adapter = async (config) => {
       const response = { config, status: 200, statusText: "OK", headers: new AxiosHeaders() };
@@ -149,7 +150,7 @@ describe("Profile", () => {
     await user.type(within(dialog).getByRole("textbox", { name: "Nome" }), "Nome salvo");
     await user.upload(
       within(dialog).getByLabelText("Carregar imagem de Foto do perfil", { selector: "input" }),
-      new File(["image"], "foto.png", { type: "image/png" }),
+      new File(["RIFFxxxxWEBP"], "foto.png", { type: "image/png" }),
     );
     fireEvent.load(await screen.findByRole("img", { name: "Imagem para recorte" }));
     await user.click(screen.getByRole("button", { name: "Confirmar recorte" }));

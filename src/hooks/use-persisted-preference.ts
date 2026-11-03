@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { preferenceSchema, readStoredValue, writeStoredValue } from "@/utils/storage";
+import { preferenceSchema, readStoredValue, writeStoredValue } from "@/lib/utils/storage";
 
 export function usePersistedPreference<T extends string>(
   storageKey: string,

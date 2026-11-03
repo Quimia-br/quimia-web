@@ -1,9 +1,25 @@
 import { z } from "zod";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { normalizeServiceError, parseResponse } from "./errors";
-import type { HomeSummary, DauDay, RecommendationDay, TopProduct, UserProfile, Statistics } from "@/types/Relatorios";
+import type {
+  HomeSummary,
+  DauDay,
+  RecommendationDay,
+  TopProduct,
+  UserProfile,
+  Statistics,
+} from "@/types/Relatorios";
 // Transitional re-exports preserve callers while consumers move to domain types.
-export type { HomeSummary, DauDay, RecommendationDay, TopProduct, UserProfile, ReportSeries, ReportCard, Statistics } from "@/types/Relatorios";
+export type {
+  HomeSummary,
+  DauDay,
+  RecommendationDay,
+  TopProduct,
+  UserProfile,
+  ReportSeries,
+  ReportCard,
+  Statistics,
+} from "@/types/Relatorios";
 
 const count = z.number().int().nonnegative();
 const optionalNumber = z.number().nullish();
@@ -72,10 +88,13 @@ async function readReport<T>(
   try {
     const response = await api.get<unknown>(`/empresas/me/${path}`, { signal, params });
     return parseResponse(response, schema, "invalid_report_response");
-  } catch (cause) { throw normalizeServiceError(cause, `relatorios.${path}`); }
+  } catch (cause) {
+    throw normalizeServiceError(cause, `relatorios.${path}`);
+  }
 }
 
-export const getDau = (signal?: AbortSignal): Promise<DauDay[]> => readReport("kpis/dau", z.array(dauSchema), signal);
+export const getDau = (signal?: AbortSignal): Promise<DauDay[]> =>
+  readReport("kpis/dau", z.array(dauSchema), signal);
 export const getRecommendations = (signal?: AbortSignal): Promise<RecommendationDay[]> =>
   readReport("kpis/recomendacoes", z.array(recommendationSchema), signal);
 export const getTopProducts = (limite = 5, signal?: AbortSignal): Promise<TopProduct[]> =>

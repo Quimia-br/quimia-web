@@ -1,13 +1,14 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { api } from "@/services/api";
 import { authKeys } from "@/hooks/use-user";
 import type { EmpresaMe } from "@/types/Empresa";
 import ProfileContainer from "@/components/ProfileContainer";
+import { useAuthStore } from "@/lib/auth-token";
 
 const company: EmpresaMe = {
   id: 12,
@@ -20,9 +21,13 @@ const company: EmpresaMe = {
 const originalAdapter = api.defaults.adapter;
 const clients: QueryClient[] = [];
 
+beforeEach(() => useAuthStore.getState().actions.login("valid", company));
+
 afterEach(() => {
+  cleanup();
   api.defaults.adapter = originalAdapter;
   clients.splice(0).forEach((client) => client.clear());
+  useAuthStore.getState().actions.logout();
   vi.restoreAllMocks();
 });
 

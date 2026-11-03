@@ -1,6 +1,6 @@
 import { AxiosHeaders } from "axios";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import {
   getDau,
   getRecommendations,

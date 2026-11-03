@@ -1,5 +1,6 @@
+import { renderWithAuth as render } from "../support/render-with-auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   AxiosError,
@@ -10,7 +11,7 @@ import {
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { ThemeProvider } from "@/lib/theme-provider";
 import Products from "@/pages/Products";
 import { cleanAnalysis } from "../fixtures/fds";
@@ -39,7 +40,12 @@ const validTypes = [
 ];
 
 function respond(config: InternalAxiosRequestConfig, data: unknown, status = 200) {
-  if (config.url?.endsWith("/assincronas") && data && typeof data === "object" && "analiseId" in data) {
+  if (
+    config.url?.endsWith("/assincronas") &&
+    data &&
+    typeof data === "object" &&
+    "analiseId" in data
+  ) {
     data = { id: "job-1", status: "concluida", analise: data, codigo: null, detail: null };
     status = 202;
   }
@@ -100,16 +106,16 @@ async function save(dialog: HTMLElement) {
   const user = userEvent.setup();
   const name = within(dialog).queryByRole("textbox", { name: "Nome" });
   if (name) {
-    await user.click(within(dialog).getByRole("button", { name: "Continuar", exact: true }));
+    await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
     if (within(dialog).queryByRole("textbox", { name: "Nome" })) return;
     fireEvent.change(within(dialog).getByLabelText("Arquivo PDF da FDS"), {
       target: { files: [new File(["%PDF-1.7\nFDS"], "ficha.pdf", { type: "application/pdf" })] },
     });
     await within(dialog).findByText("ficha.pdf");
-    await user.click(within(dialog).getByRole("button", { name: "Continuar", exact: true }));
+    await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
     await within(dialog).findByText("Nenhuma pendência foi encontrada.", {}, { timeout: 4000 });
   }
-  await user.click(within(dialog).getByRole("button", { name: "Continuar", exact: true }));
+  await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
 }
 
 beforeEach(() => {
@@ -136,6 +142,7 @@ afterEach(() => {
   clients.splice(0).forEach((client) => client.clear());
   api.defaults.adapter = originalAdapter;
   localStorage.clear();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -152,10 +159,10 @@ describe("Web product creation", () => {
   it("opens the same registration dialog from the empty state and the header", async () => {
     setup();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Adicionar produto", exact: true }));
+    await user.click(await screen.findByRole("button", { name: "Adicionar produto" }));
     expect(screen.getByRole("dialog", { name: "Cadastrar novo produto" })).toBeInTheDocument();
     expect(document.querySelectorAll('[data-slot="dialog-content"]')).toHaveLength(1);
-    await user.click(screen.getByRole("button", { name: "Cancelar", exact: true }));
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
     await waitFor(() =>
       expect(
         screen.queryByRole("dialog", { name: "Cadastrar novo produto" }),
@@ -194,10 +201,17 @@ describe("Web product creation", () => {
     };
     setup(undefined, async (config) => {
       analysisRequests.push(`${config.method} ${config.url}`);
-      return respond(config, {
-        id: "job-1", status: config.method === "post" ? "processando" : "concluida",
-        analise: config.method === "post" ? null : cleanAnalysis, codigo: null, detail: null,
-      }, config.method === "post" ? 202 : 200);
+      return respond(
+        config,
+        {
+          id: "job-1",
+          status: config.method === "post" ? "processando" : "concluida",
+          analise: config.method === "post" ? null : cleanAnalysis,
+          codigo: null,
+          detail: null,
+        },
+        config.method === "post" ? 202 : 200,
+      );
     });
     const dialog = await openForm();
     expect(within(dialog).getByRole("textbox", { name: "Nome" })).toBeVisible();
@@ -208,7 +222,25 @@ describe("Web product creation", () => {
     fireEvent.change(within(dialog).getByRole("textbox", { name: "Código de barras" }), {
       target: { value: "0012345678905" },
     });
-    await save(dialog);
+    const user = userEvent.setup();
+    await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
+    fireEvent.change(within(dialog).getByLabelText("Arquivo PDF da FDS"), {
+      target: { files: [new File(["%PDF-1.7\nFDS"], "ficha.pdf", { type: "application/pdf" })] },
+    });
+    await within(dialog).findByText("ficha.pdf");
+
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Continuar" }));
+    await act(async () => {
+      await vi.waitFor(() => expect(analysisRequests).toHaveLength(1));
+    });
+    expect(
+      within(dialog).getByRole("status", { name: "Análise da FDS em andamento" }),
+    ).toBeVisible();
+    await act(async () => vi.advanceTimersByTimeAsync(2000));
+    expect(within(dialog).getByText("Nenhuma pendência foi encontrada.")).toBeVisible();
+    vi.useRealTimers();
+    await user.click(within(dialog).getByRole("button", { name: "Continuar" }));
     await waitFor(() =>
       expect(
         screen.queryByRole("dialog", { name: "Cadastrar novo produto" }),
@@ -237,7 +269,7 @@ describe("Web product creation", () => {
     };
     setup();
     const dialog = await openForm();
-    const submit = within(dialog).getByRole("button", { name: "Continuar", exact: true });
+    const submit = within(dialog).getByRole("button", { name: "Continuar" });
     expect(submit).toBeDisabled();
     await fillRequired(dialog);
     fireEvent.change(within(dialog).getByRole("textbox", { name: "Código de barras" }), {
@@ -268,9 +300,7 @@ describe("Web product creation", () => {
     fireEvent.change(barcode, { target: { value: "\t001234" } });
     fireEvent.blur(barcode);
     expect(barcode).toHaveAttribute("aria-invalid", "true");
-    await userEvent
-      .setup()
-      .click(within(dialog).getByRole("button", { name: "Continuar", exact: true }));
+    await userEvent.setup().click(within(dialog).getByRole("button", { name: "Continuar" }));
     expect(barcode).toBeVisible();
   });
 
@@ -429,7 +459,7 @@ describe("Web product creation", () => {
       within(dialog).getByRole("textbox", { name: "Código de barras" }),
     );
     expect(viewport).not.toContainElement(
-      within(dialog).getByRole("button", { name: "Continuar", exact: true }),
+      within(dialog).getByRole("button", { name: "Continuar" }),
     );
     expect(viewport).not.toContainElement(within(dialog).getByRole("button", { name: "Cancelar" }));
   });
@@ -444,7 +474,7 @@ describe("Web product creation", () => {
     const dialog = await openForm();
     const retry = await within(dialog).findByRole("button", { name: "Recarregar tipos" });
     expect(within(dialog).getByRole("combobox", { name: "Tipo" })).toBeDisabled();
-    expect(within(dialog).getByRole("button", { name: "Continuar", exact: true })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Continuar" })).toBeDisabled();
     await userEvent.setup().click(retry);
     const type = within(dialog).getByRole("combobox", { name: "Tipo" });
     await waitFor(() => expect(type).toBeEnabled());

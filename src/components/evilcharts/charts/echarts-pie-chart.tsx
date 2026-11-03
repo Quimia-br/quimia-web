@@ -660,7 +660,12 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
       dimmed,
     });
 
-    return tooltipShell({ label: "", body: row, roundness: tooltipSlot.roundness, variant: tooltipSlot.variant });
+    return tooltipShell({
+      label: "",
+      body: row,
+      roundness: tooltipSlot.roundness,
+      variant: tooltipSlot.variant,
+    });
   };
 }
 

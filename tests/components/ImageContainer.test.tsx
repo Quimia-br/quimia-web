@@ -32,6 +32,16 @@ describe("ImageContainer", () => {
     expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 
+  it("connects the generated dropzone input to an explicit upload label", () => {
+    render(<ImagemContainer label="Logo" onChange={vi.fn()} />);
+    const input = screen.getByLabelText<HTMLInputElement>("Carregar imagem de Logo", {
+      selector: "input",
+    });
+    expect(input.id).not.toBe("");
+    expect(input.labels).toHaveLength(1);
+    expect(input.labels?.[0]).toHaveAttribute("for", input.id);
+  });
+
   it("opens the existing image for editing and preserves it on cancel", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

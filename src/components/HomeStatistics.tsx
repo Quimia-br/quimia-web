@@ -5,7 +5,7 @@ import BasicButton from "@/components/BasicButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useHomeSummary } from "@/hooks/use-company-reports";
 import { reportNumber, reportPercent } from "@/lib/company-reports";
-import type { HomeSummary } from "@/services/relatorios";
+import type { HomeSummary } from "@/types/Relatorios";
 
 const headingStyle = "[&_hgroup_h2]:text-xl [&_hgroup_p]:text-sm [&_hgroup_p]:leading-tight";
 const HomeMixtureDonut = lazy(() => import("@/components/HomeMixtureDonut"));

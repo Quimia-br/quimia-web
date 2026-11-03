@@ -33,7 +33,13 @@ export const tooltipVariantClass: Record<TooltipVariant, string> = {
 // series' solid var or multi-stop gradient (indicatorBackground). A chart drops
 // this into a tooltipRow's `indicatorHtml`.
 export function tooltipIndicatorHtml(key: string, colorsCount: number): ReactElement {
-  return <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ background: indicatorBackground(key, colorsCount) }} />;
+  return (
+    <span
+      aria-hidden="true"
+      className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+      style={{ background: indicatorBackground(key, colorsCount) }}
+    />
+  );
 }
 interface TooltipRowProps {
   indicatorHtml: ReactNode;
@@ -43,14 +49,22 @@ interface TooltipRowProps {
   rowKey?: string;
 }
 /** External labels and values enter JSX text nodes. React escapes markup for ECharts. */
-export function tooltipRow({ indicatorHtml, labelText, valueText, dimmed, rowKey }: TooltipRowProps): ReactElement {
-  return <div key={rowKey ?? labelText} className={"flex w-full flex-wrap items-center gap-2" + dimmed}>
-    {indicatorHtml}
-    <div className="flex flex-1 items-center justify-between gap-4 leading-none">
-      <span className="text-muted-foreground">{labelText}</span>
-      <span className="text-foreground font-mono font-medium tabular-nums">{valueText}</span>
+export function tooltipRow({
+  indicatorHtml,
+  labelText,
+  valueText,
+  dimmed,
+  rowKey,
+}: TooltipRowProps): ReactElement {
+  return (
+    <div key={rowKey ?? labelText} className={"flex w-full flex-wrap items-center gap-2" + dimmed}>
+      {indicatorHtml}
+      <div className="flex flex-1 items-center justify-between gap-4 leading-none">
+        <span className="text-muted-foreground">{labelText}</span>
+        <span className="text-foreground font-mono font-medium tabular-nums">{valueText}</span>
+      </div>
     </div>
-  </div>;
+  );
 }
 interface TooltipShellProps {
   label: string;
@@ -59,10 +73,19 @@ interface TooltipShellProps {
   variant: TooltipVariant;
 }
 export function tooltipShell({ label, body, roundness, variant }: TooltipShellProps): string {
-  return renderToStaticMarkup(<div className={"grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl " + roundnessClass[roundness] + " " + tooltipVariantClass[variant]}>
-    {label && <div className="font-medium text-foreground">{label}</div>}
-    <div className="grid gap-1.5">{body}</div>
-  </div>);
+  return renderToStaticMarkup(
+    <div
+      className={
+        "grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl " +
+        roundnessClass[roundness] +
+        " " +
+        tooltipVariantClass[variant]
+      }
+    >
+      {label && <div className="font-medium text-foreground">{label}</div>}
+      <div className="grid gap-1.5">{body}</div>
+    </div>,
+  );
 }
 
 // Maps the TooltipPosition prop onto the ECharts tooltip `position` field.

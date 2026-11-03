@@ -17,9 +17,19 @@ afterEach(() => {
 describe("AuthProvider", () => {
   it("distributes session changes to nested consumers without passing props", () => {
     useAuthStore.getState().actions.logout();
-    render(<AuthProvider><section><Session /></section></AuthProvider>);
+    render(
+      <AuthProvider>
+        <section>
+          <Session />
+        </section>
+      </AuthProvider>,
+    );
     expect(screen.getByText("Sessão encerrada")).toBeVisible();
-    act(() => useAuthStore.getState().actions.login("memory-only", { id: 7, nome: "Empresa", email: "empresa@example.com" }));
+    act(() =>
+      useAuthStore
+        .getState()
+        .actions.login("memory-only", { id: 7, nome: "Empresa", email: "empresa@example.com" }),
+    );
     expect(screen.getByText("Empresa")).toBeVisible();
     act(() => useAuthStore.getState().actions.logout());
     expect(screen.getByText("Sessão encerrada")).toBeVisible();

@@ -31,7 +31,11 @@ export function useProductRegistrationDraft(
     void loadProductDraft(ownerId)
       .then((saved) => {
         if (!active) return;
-        dispatch({ type: "restored", draft: saved ?? emptyProductDraft(), recoveryNotice: saved?.recoveryNotice ?? null });
+        dispatch({
+          type: "restored",
+          draft: saved ?? emptyProductDraft(),
+          recoveryNotice: saved?.recoveryNotice ?? null,
+        });
       })
       .catch(() => {
         if (!active) return;

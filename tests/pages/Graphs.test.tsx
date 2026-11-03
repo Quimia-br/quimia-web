@@ -5,7 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { ThemeProvider } from "@/lib/theme-provider";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import Graphs from "@/pages/Graphs";
 
 vi.mock("@/components/evilcharts/charts/echarts-line-chart", () => {

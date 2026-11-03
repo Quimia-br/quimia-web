@@ -27,13 +27,13 @@ ver indicadores em gráficos e conversar com a assistente Kemi. Consome a
 
 ## Visão geral
 
-| Tema | Como é tratado |
-| --- | --- |
-| **Sessão** | Token de acesso só em memória; renovação por cookie HttpOnly e CSRF. |
-| **Dados** | Toda chamada à API isolada em `src/services`, com TanStack Query e Axios. |
-| **Rotas** | React Router com rotas protegidas e página 404. |
-| **Acessibilidade** | WCAG 2.1 AA, tema claro/escuro e fonte para dislexia. |
-| **Entrega** | Site estático no Render, publicado ao criar uma Release. |
+| Tema               | Como é tratado                                                            |
+| ------------------ | ------------------------------------------------------------------------- |
+| **Sessão**         | Token de acesso só em memória; renovação por cookie HttpOnly e CSRF.      |
+| **Dados**          | Toda chamada à API isolada em `src/services`, com TanStack Query e Axios. |
+| **Rotas**          | React Router com rotas protegidas e página 404.                           |
+| **Acessibilidade** | WCAG 2.1 AA, tema claro/escuro e fonte para dislexia.                     |
+| **Entrega**        | Site estático no Render, publicado ao criar uma Release.                  |
 
 ## Funcionalidades
 
@@ -47,18 +47,18 @@ ver indicadores em gráficos e conversar com a assistente Kemi. Consome a
 
 ## Stack
 
-| Área | Tecnologia |
-|---|---|
-| Base | React 19, TypeScript, Vite, React Compiler |
-| Rotas | React Router 7 |
-| Dados | TanStack Query, Axios, Zod |
-| Formulários | TanStack Form |
-| Estado | Zustand |
-| UI | Tailwind CSS 4, shadcn/ui, Base UI, Motion |
-| Gráficos | ECharts |
-| Testes | Vitest, Testing Library |
-| Qualidade | ESLint, React Doctor |
-| Gerenciador de pacotes | pnpm |
+| Área                   | Tecnologia                                 |
+| ---------------------- | ------------------------------------------ |
+| Base                   | React 19, TypeScript, Vite, React Compiler |
+| Rotas                  | React Router 7                             |
+| Dados                  | TanStack Query, Axios, Zod                 |
+| Formulários            | TanStack Form                              |
+| Estado                 | Zustand                                    |
+| UI                     | Tailwind CSS 4, shadcn/ui, Base UI, Motion |
+| Gráficos               | ECharts                                    |
+| Testes                 | Vitest, Testing Library                    |
+| Qualidade              | ESLint, React Doctor                       |
+| Gerenciador de pacotes | pnpm                                       |
 
 ## Como rodar
 
@@ -75,21 +75,21 @@ quimia-api rodando localmente (veja o README dela).
 
 ## Variáveis de ambiente
 
-| Variável | Finalidade |
-|---|---|
+| Variável       | Finalidade                                                                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_API_KEY` | Origem da API, **sem** `/api/v1`. No desenvolvimento o Vite faz proxy de `/api` para ela. Vazio usa `http://localhost:8080`. Em produção deixe vazio e publique `/api` por proxy no mesmo domínio |
 
 Nenhuma chave privada deve ir para o repositório: o `.env` é ignorado pelo Git.
 
 ## Scripts
 
-| Comando | O que faz |
-|---|---|
-| `pnpm dev` | Servidor de desenvolvimento |
-| `pnpm build` | Checagem de tipos (`tsc -b`) e build de produção em `dist/` |
-| `pnpm preview` | Serve o build localmente |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Testes (Vitest) |
+| Comando        | O que faz                                                   |
+| -------------- | ----------------------------------------------------------- |
+| `pnpm dev`     | Servidor de desenvolvimento                                 |
+| `pnpm build`   | Checagem de tipos (`tsc -b`) e build de produção em `dist/` |
+| `pnpm preview` | Serve o build localmente                                    |
+| `pnpm lint`    | ESLint                                                      |
+| `pnpm test`    | Testes (Vitest)                                             |
 
 ## Estrutura do projeto
 
@@ -108,14 +108,14 @@ docs/              autenticação, componentes e convenções de contribuição
 
 ## Rotas da aplicação
 
-| Rota | Página | Acesso |
-|---|---|---|
-| `/login`, `/signup`, `/reset-password` | Autenticação | Pública |
-| `/` | Início | Autenticada |
-| `/products` | Produtos | Autenticada |
-| `/graphs` | Gráficos | Autenticada |
-| `/profile` | Perfil da empresa | Autenticada |
-| `*` | Página de erro 404 com botão de retorno | Pública |
+| Rota                                   | Página                                  | Acesso      |
+| -------------------------------------- | --------------------------------------- | ----------- |
+| `/login`, `/signup`, `/reset-password` | Autenticação                            | Pública     |
+| `/`                                    | Início                                  | Autenticada |
+| `/products`                            | Produtos                                | Autenticada |
+| `/graphs`                              | Gráficos                                | Autenticada |
+| `/profile`                             | Perfil da empresa                       | Autenticada |
+| `*`                                    | Página de erro 404 com botão de retorno | Pública     |
 
 Rotas autenticadas passam por `ProtectedRoute` (`src/lib/ProtectedRoute.tsx`), que redireciona para o login
 quando não há sessão.
@@ -147,7 +147,7 @@ e publica no Render ao criar uma Release. Há ainda a checagem
 ## Deploy
 
 Site estático no Render (`render.yaml`): `pnpm install --frozen-lockfile && pnpm run build`, publicando `dist/`
-com *rewrite* de todas as rotas para `index.html`. O deploy é disparado pelo workflow ao publicar uma Release.
+com _rewrite_ de todas as rotas para `index.html`. O deploy é disparado pelo workflow ao publicar uma Release.
 
 ## Documentação adicional
 

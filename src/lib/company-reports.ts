@@ -1,4 +1,4 @@
-import type { ReportSeries, UserProfile } from "@/services/relatorios";
+import type { ReportSeries, UserProfile } from "@/types/Relatorios";
 
 export const reportNumber = new Intl.NumberFormat("pt-BR");
 export const reportDecimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });

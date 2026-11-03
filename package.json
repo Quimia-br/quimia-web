@@ -13,7 +13,8 @@
     "preview": "vp preview",
     "test": "vp test run",
     "test:watch": "vp test",
-    "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -p tsconfig.proxy-test.json"
+    "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -p tsconfig.proxy-test.json",
+    "verify:rubric": "node --experimental-strip-types scripts/verify-rubric.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

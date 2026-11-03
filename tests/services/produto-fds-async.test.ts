@@ -1,6 +1,6 @@
 import { AxiosHeaders } from "axios";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { api } from "@/lib/api";
+import { api } from "@/services/api";
 import { useAuthStore } from "@/lib/auth-token";
 import { fdsError } from "@/lib/fds-error";
 import { analyzeFds } from "@/services/produto";
